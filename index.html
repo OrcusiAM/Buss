@@ -311,6 +311,22 @@ function uberLink(from,to){
   return "https://m.uber.com/ul/?" + p;
 }
 
+/* ---------- price estimates (official Abu Dhabi rates, no Google credits used) ----------
+   Bus: AED 2 boarding + AED 0.05 per km (transfers within 60 min are free)
+   Taxi: AED 5.00 day / 5.50 night flag fall + AED 1.82 per km, minimum AED 12,
+         booking fee AED 4 day / 5 night when booked by app, plus some traffic waiting */
+const busFare = km => Math.round((2 + 0.05*km)*20)/20;
+function taxiFare(km, carMin){
+  const h = +new Date().toLocaleString("en-US",{hour:"numeric",hour12:false,timeZone:TZ});
+  const night = h >= 22 || h < 6;
+  const meter = Math.max(12, (night ? 5.5 : 5) + 1.82*km);
+  const freeFlowMin = km / 60 * 60;                       // ~60 km/h average
+  const waiting = Math.max(0, carMin - freeFlowMin) * 0.5 * 0.5; // part of slow traffic billed at AED 0.50/min
+  const low = Math.round(meter), high = Math.round(meter + waiting + (night ? 5 : 4));
+  return {low, high, mid:(low+high)/2};
+}
+const aed = n => "AED " + (Number.isInteger(n) ? n : n.toFixed(2));
+
 /* ---------- Google calls ---------- */
 async function callRoutes(body, mask){
   addUsage(1);
@@ -401,7 +417,7 @@ function parse(route){
       parts.push({type:"bus", no:line.nameShort||line.name||"Bus", dest:t.headsign||line.name||"",
         fromLL:sd.departureStop?.location?.latLng || null, toLL:sd.arrivalStop?.location?.latLng || null,
         from:sd.departureStop?.name||"Bus stop", to:sd.arrivalStop?.name||"Bus stop",
-        dep:new Date(sd.departureTime), arr:new Date(sd.arrivalTime), stops:t.stopCount||0});
+        dep:new Date(sd.departureTime), arr:new Date(sd.arrivalTime), stops:t.stopCount||0, m:s.distanceMeters||0});
     }else{
       const last = parts[parts.length-1], sec = secs(s.staticDuration), m = s.distanceMeters||0;
       if(last && last.type === "walk"){ last.sec += sec; last.m += m; }
@@ -414,7 +430,8 @@ function parse(route){
   const before = parts.slice(0,i0).reduce((a,p)=>a+p.sec,0);
   const after = parts.slice(iN+1).reduce((a,p)=>a+p.sec,0);
   const walkSec = parts.filter(p => p.type === "walk").reduce((a,p)=>a+p.sec,0);
-  return {parts, buses, walk:Math.round(walkSec/60), walkFirst:Math.round(before/60),
+  const busKm = buses.reduce((a,b)=>a+b.m,0)/1000;
+  return {parts, buses, walk:Math.round(walkSec/60), walkFirst:Math.round(before/60), fare:busFare(busKm),
     leave:new Date(buses[0].dep - before*1000),
     arrive:new Date(buses[buses.length-1].arr.getTime() + after*1000),
     total:mins(secs(route.duration))};
@@ -426,6 +443,7 @@ function render(){
   const {trips, car, from, to, deadline, gm, here} = state;
   const out = $("out");
   const carArrive = car ? new Date(Date.now() + car.sec*1000 + 5*60000) : null;
+  const taxi = car ? taxiFare(car.km, mins(car.sec)) : null;
   const anyOnTime = trips.some(t => !t.late);
 
   // tags
@@ -460,16 +478,18 @@ function render(){
     rows.map((r,idx) => {
       const open = idx === state.open;
       if(r.kind === "car"){
+        const saved = busBest ? Math.round((busBest.arrive - carArrive)/60000) : 0;
+        const extra = busBest ? Math.round(taxi.mid - busBest.fare) : 0;
         const tags = taxiFirst ? `<span class="tags"><em class="best">Only way on time</em></span>` :
-          taxiUseful ? `<span class="tags"><em>${mins(busBest.total*60 - car.sec)} min faster than the bus</em></span>` : "";
+          saved >= 5 ? `<span class="tags"><em${taxiUseful ? ' class="best"' : ""}>Saves ${saved} min for ~AED ${extra} more</em></span>` : "";
         return `<button type="button" class="opt" data-row="${idx}" aria-expanded="${open}">
             <span class="badge car" aria-hidden="true">🚕</span>
-            <span class="mid">${tags}<b>Taxi or Uber</b><span class="sub">Door to door · ${car.km.toFixed(1)} km</span></span>
+            <span class="mid">${tags}<b>Taxi or Uber</b><span class="sub">Door to door · ~AED ${taxi.low}–${taxi.high}</span></span>
             <span class="right"><b>${fmt(carArrive)}</b><span>${mins(car.sec)} min</span></span>
           </button>` + (open ? carDetail() : "");
       }
       const t = r.t, b = t.buses[0];
-      const subTxt = `Leave ${fmt(t.leave)} · 🚶 ${t.walk} min${t.buses.length > 1 ? ` · ${t.buses.length} buses` : ""}`;
+      const subTxt = `Leave ${fmt(t.leave)} · 🚶 ${t.walk} min · ${aed(t.fare)}${t.buses.length > 1 ? ` · ${t.buses.length} buses` : ""}`;
       return `<button type="button" class="opt" data-row="${idx}" aria-expanded="${open}">
           <span class="badge" aria-label="Bus ${esc(b.no)}">${esc(b.no)}</span>
           <span class="mid"><span class="tags">${t.tags.map(([n,c]) => `<em class="${c}">${esc(n)}</em>`).join("")}</span>
@@ -490,7 +510,18 @@ function render(){
         ? `<p class="hint">To arrive by <b>${fmt(deadline)}</b>, book it by <b>${fmt(bookBy)}</b>.</p>`
         : `<p class="hint">Even by car you'd arrive around <b>${fmt(carArrive)}</b>.</p>`;
     } else line = `<p class="hint">About <b>${mins(car.sec)} min</b> with current traffic, plus a few minutes for pickup.</p>`;
-    return `<div class="detail">${line}
+    let compare = "";
+    if(busBest){
+      const saved = Math.round((busBest.arrive - carArrive)/60000), extra = Math.round(taxi.mid - busBest.fare);
+      compare = saved > 0
+        ? `<p class="hint">Compared with the best bus (${aed(busBest.fare)}): you arrive <b>${saved} min earlier</b> for about <b>AED ${extra} more</b>${saved >= 5 ? ` — roughly <b>AED ${(extra/saved).toFixed(1)} per minute saved</b>` : ""}.</p>`
+        : `<p class="hint">The best bus (${aed(busBest.fare)}) gets you there about as fast.</p>`;
+    }
+    return `<div class="detail">
+      <div class="leave"><div><div class="lbl">Estimated price</div><div class="big">${taxi.low}–${taxi.high}<small>AED</small></div></div>
+        <div style="text-align:right"><div class="lbl">${car.km.toFixed(1)} km</div><div style="font-weight:800;font-size:22px">${mins(car.sec)} min</div></div></div>
+      ${line}${compare}
+      <p class="hint" style="font-size:13px">Estimate from official Abu Dhabi taxi rates. Uber and Careem show the exact price before you confirm.</p>
       <div class="actions"><a class="primary" href="${uberLink(from,to)}" target="_blank" rel="noopener">Open Uber</a>
       <a href="${mapsLink(from,to,"driving")}" target="_blank" rel="noopener">Car route</a></div></div>`;
   }
