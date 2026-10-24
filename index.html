@@ -1,0 +1,302 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="My Bus">
+<meta name="theme-color" content="#0f766e">
+<title>My Bus</title>
+<style>
+  /* ============ PASTE YOUR KEY IN THE SCRIPT BELOW (API_KEY) ============ */
+  :root{
+    --bg:#f4f6f5; --card:#ffffff; --text:#14201d; --muted:#5f6f6a; --line:#dde3e1;
+    --accent:#0f766e; --accent-soft:#e0f2ef; --warn:#b45309; --err:#b91c1c;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#0e1513; --card:#17211e; --text:#e8efed; --muted:#93a39e; --line:#26332f;
+      --accent:#2dd4bf; --accent-soft:#123a35; --warn:#f59e0b; --err:#f87171; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);
+    font:16px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    padding:max(16px,env(safe-area-inset-top)) 16px 40px}
+  .wrap{max-width:520px;margin:0 auto}
+  h1{font-size:22px;margin:4px 0 14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px}
+  label{font-size:13px;color:var(--muted);display:block;margin:0 0 4px}
+  .row{display:flex;gap:8px;align-items:center}
+  input,select{width:100%;font:inherit;color:var(--text);background:var(--bg);
+    border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  input:focus{outline:2px solid var(--accent);outline-offset:-1px}
+  button{font:inherit;border:0;border-radius:10px;padding:11px 14px;cursor:pointer}
+  .btn{background:var(--accent);color:#fff;font-weight:600;width:100%;margin-top:10px}
+  @media (prefers-color-scheme: dark){ .btn{color:#06201c} }
+  .ghost{background:var(--accent-soft);color:var(--accent);font-weight:600;white-space:nowrap}
+  .icon{background:var(--accent-soft);color:var(--accent);padding:11px 12px}
+  .field{margin-bottom:10px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+  .chip{background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:7px 12px;font-size:14px;font-weight:600}
+  .chip.add{background:transparent;border:1px dashed var(--accent)}
+  .small{font-size:13px;color:var(--muted)}
+  .msg{padding:12px;border-radius:10px;margin-bottom:12px;font-size:15px}
+  .msg.err{background:color-mix(in srgb,var(--err) 12%,transparent);color:var(--err)}
+  .msg.info{background:var(--accent-soft);color:var(--accent)}
+  .route-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .leave{font-size:24px;font-weight:700}
+  .leave small{font-size:14px;font-weight:600;color:var(--warn);margin-left:6px}
+  .total{color:var(--muted);font-size:14px;text-align:right}
+  .step{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+  .step:first-of-type{border-top:0}
+  .badge{min-width:52px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-weight:800;font-size:16px;flex-shrink:0;padding:0 6px}
+  .walk{background:var(--line);color:var(--muted);font-size:13px;font-weight:600}
+  .headsign{font-size:19px;font-weight:800;line-height:1.2}
+  .detail{font-size:14px;color:var(--muted);margin-top:3px}
+  .detail b{color:var(--text)}
+  .maps{display:block;text-align:center;margin-top:10px;color:var(--accent);font-weight:600;text-decoration:none}
+  .seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}
+  .seg button{flex:1;background:transparent;color:var(--muted);padding:8px 4px;font-size:14px;font-weight:600}
+  .seg button.on{background:var(--card);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.15)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🚌 My Bus</h1>
+
+  <div class="card">
+    <div class="field">
+      <label for="from">From</label>
+      <div class="row">
+        <input id="from" placeholder="My location" autocomplete="off">
+        <button class="icon" id="locBtn" title="Use my location">📍</button>
+      </div>
+    </div>
+    <div class="field">
+      <label for="to">To</label>
+      <div class="row">
+        <input id="to" placeholder="Where to?" autocomplete="off">
+        <button class="icon" id="swapBtn" title="Swap">⇅</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="seg" id="whenSeg">
+        <button data-mode="now" class="on">Leave now</button>
+        <button data-mode="depart">Leave at</button>
+        <button data-mode="arrive">Arrive by</button>
+      </div>
+      <input type="time" id="time" class="hidden" style="margin-top:8px">
+    </div>
+
+    <label>Favorites <span class="small">(tap to fill the selected field)</span></label>
+    <div class="chips" id="chips"></div>
+
+    <button class="btn" id="goBtn">Find my bus</button>
+  </div>
+
+  <div id="out"></div>
+</div>
+
+<script>
+/* ================================================================
+   1) PASTE YOUR GOOGLE MAPS API KEY BETWEEN THE QUOTES BELOW
+   ================================================================ */
+const API_KEY = "PASTE_YOUR_KEY_HERE";
+
+const TZ = "Asia/Dubai";
+const $ = id => document.getElementById(id);
+let activeField = "to";
+let whenMode = "now";
+let myLoc = null; // {latitude, longitude}
+
+/* ---------- storage (safe) ---------- */
+function load(k, d){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function save(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+/* ---------- favorites ---------- */
+let favs = load("favs", []);
+function renderChips(){
+  const box = $("chips"); box.innerHTML = "";
+  favs.forEach((f, i) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.textContent = f.name;
+    b.onclick = () => { $(activeField).value = f.address; };
+    b.oncontextmenu = e => { e.preventDefault(); removeFav(i); };
+    let t; // long press to delete (iPhone)
+    b.ontouchstart = () => { t = setTimeout(() => removeFav(i), 700); };
+    b.ontouchend = b.ontouchmove = () => clearTimeout(t);
+    box.appendChild(b);
+  });
+  const add = document.createElement("button");
+  add.className = "chip add"; add.textContent = "+ Add";
+  add.onclick = addFav;
+  box.appendChild(add);
+}
+function addFav(){
+  const name = prompt("Name for this place (e.g. Home, Work, Mazyad Mall):");
+  if(!name) return;
+  const address = prompt("Address or place name (e.g. Mazyad Mall, Mussafah):", $(activeField).value || "");
+  if(!address) return;
+  favs.push({name: name.trim(), address: address.trim()}); save("favs", favs); renderChips();
+}
+function removeFav(i){
+  if(confirm(`Delete favorite "${favs[i].name}"?`)){ favs.splice(i,1); save("favs", favs); renderChips(); }
+}
+
+/* ---------- inputs ---------- */
+["from","to"].forEach(id => $(id).addEventListener("focus", () => activeField = id));
+$("swapBtn").onclick = () => { const a=$("from").value; $("from").value=$("to").value; $("to").value=a; };
+$("locBtn").onclick = () => { $("from").value = ""; $("from").placeholder = "My location"; };
+document.querySelectorAll("#whenSeg button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#whenSeg button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); whenMode = b.dataset.mode;
+  $("time").classList.toggle("hidden", whenMode === "now");
+  if(whenMode !== "now" && !$("time").value){
+    const d = new Date(Date.now() + 30*60000);
+    $("time").value = d.toTimeString().slice(0,5);
+  }
+});
+
+function getLocation(){
+  return new Promise((res, rej) => {
+    if(!navigator.geolocation) return rej(new Error("Location not available on this device."));
+    navigator.geolocation.getCurrentPosition(
+      p => res({latitude:p.coords.latitude, longitude:p.coords.longitude}),
+      () => rej(new Error("Couldn't get your location. Allow location access, or type where you are.")),
+      {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
+  });
+}
+function withCountry(s){ return /\b(uae|united arab emirates|abu dhabi|dubai|al ain)\b/i.test(s) ? s : s + ", Abu Dhabi, UAE"; }
+function chosenTime(){
+  const [h,m] = $("time").value.split(":").map(Number);
+  const d = new Date(); d.setHours(h, m, 0, 0);
+  if(d < new Date()) d.setDate(d.getDate()+1); // time already passed → tomorrow
+  return d;
+}
+
+/* ---------- helpers ---------- */
+const secs = s => parseInt(String(s||"0").replace("s",""),10) || 0;
+const fmt = d => d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ});
+const mins = s => Math.max(1, Math.round(s/60));
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function mapsLink(fromText, toText){
+  const p = new URLSearchParams({api:"1", destination: withCountry(toText), travelmode:"transit"});
+  if(fromText) p.set("origin", withCountry(fromText));
+  return "https://www.google.com/maps/dir/?" + p.toString();
+}
+
+/* ---------- main search ---------- */
+$("goBtn").onclick = search;
+async function search(){
+  const out = $("out");
+  const fromText = $("from").value.trim();
+  const toText = $("to").value.trim();
+  if(!toText){ out.innerHTML = `<div class="msg err">Choose where you're going.</div>`; return; }
+
+  const fallback = `<a class="maps" href="${mapsLink(fromText,toText)}" target="_blank">Open in Google Maps →</a>`;
+
+  if(!API_KEY || API_KEY.startsWith("PASTE")){
+    out.innerHTML = `<div class="msg info">No API key yet, so I can't show bus details here.</div>${fallback}`;
+    return;
+  }
+
+  out.innerHTML = `<div class="msg info">Looking for buses…</div>`;
+  try{
+    let origin;
+    if(fromText){ origin = {address: withCountry(fromText)}; }
+    else { myLoc = await getLocation(); origin = {location:{latLng:myLoc}}; }
+
+    const body = {
+      origin, destination:{address: withCountry(toText)},
+      travelMode:"TRANSIT", computeAlternativeRoutes:true,
+      languageCode:"en", units:"METRIC", regionCode:"AE"
+    };
+    if(whenMode === "depart") body.departureTime = chosenTime().toISOString();
+    if(whenMode === "arrive") body.arrivalTime  = chosenTime().toISOString();
+
+    const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "X-Goog-Api-Key": API_KEY,
+        "X-Goog-FieldMask": [
+          "routes.duration","routes.localizedValues",
+          "routes.legs.steps.travelMode","routes.legs.steps.staticDuration",
+          "routes.legs.steps.distanceMeters","routes.legs.steps.transitDetails"
+        ].join(",")
+      },
+      body: JSON.stringify(body)
+    });
+    const data = await r.json();
+    if(!r.ok) throw new Error(data?.error?.message || ("Error " + r.status));
+    if(!data.routes || !data.routes.length){
+      out.innerHTML = `<div class="msg err">No bus routes found for that trip.</div>${fallback}`; return;
+    }
+    out.innerHTML = data.routes.slice(0,3).map(renderRoute).join("") + fallback;
+  }catch(e){
+    out.innerHTML = `<div class="msg err">${esc(e.message)}</div>${fallback}`;
+  }
+}
+
+/* ---------- render one route ---------- */
+function renderRoute(route){
+  const steps = (route.legs||[]).flatMap(l => l.steps||[]);
+  // merge consecutive walking steps
+  const parts = [];
+  for(const s of steps){
+    if(s.travelMode === "TRANSIT" && s.transitDetails){ parts.push({type:"bus", s}); }
+    else{
+      const last = parts[parts.length-1];
+      if(last && last.type==="walk"){ last.sec += secs(s.staticDuration); last.m += s.distanceMeters||0; }
+      else parts.push({type:"walk", sec:secs(s.staticDuration), m:s.distanceMeters||0});
+    }
+  }
+  const firstBusIdx = parts.findIndex(p => p.type==="bus");
+  let leaveHtml = "", arriveTxt = "";
+  if(firstBusIdx >= 0){
+    const walkBefore = parts.slice(0, firstBusIdx).reduce((a,p)=>a+(p.sec||0),0);
+    const dep = new Date(parts[firstBusIdx].s.transitDetails.stopDetails.departureTime);
+    const leave = new Date(dep.getTime() - walkBefore*1000);
+    const inMin = Math.round((leave - Date.now())/60000);
+    const soon = inMin <= 0 ? "now!" : (inMin < 60 ? `in ${inMin} min` : "");
+    leaveHtml = `Leave ${fmt(leave)}${soon ? `<small>${soon}</small>` : ""}`;
+    const lastBus = [...parts].reverse().find(p=>p.type==="bus");
+    const lastIdx = parts.lastIndexOf(lastBus);
+    const walkAfter = parts.slice(lastIdx+1).reduce((a,p)=>a+(p.sec||0),0);
+    arriveTxt = "Arrive " + fmt(new Date(new Date(lastBus.s.transitDetails.stopDetails.arrivalTime).getTime() + walkAfter*1000));
+  } else {
+    leaveHtml = "Walk only";
+  }
+  const total = route.localizedValues?.duration?.text || (mins(secs(route.duration)) + " min");
+
+  const rows = parts.map(p => {
+    if(p.type==="walk"){
+      if(p.sec < 30) return "";
+      return `<div class="step"><div class="badge walk">🚶 ${mins(p.sec)}′</div>
+        <div class="detail" style="margin-top:6px">Walk ${mins(p.sec)} min (${Math.round(p.m)} m)</div></div>`;
+    }
+    const t = p.s.transitDetails, line = t.transitLine||{}, sd = t.stopDetails||{};
+    const name = line.nameShort || line.name || "Bus";
+    const bg = line.color || "#0f766e", fg = line.textColor || "#ffffff";
+    return `<div class="step">
+      <div class="badge" style="background:${esc(bg)};color:${esc(fg)}">${esc(name)}</div>
+      <div>
+        <div class="headsign">→ ${esc(t.headsign || line.name || "")}</div>
+        <div class="detail">Board at <b>${esc(sd.departureStop?.name||"stop")}</b> · <b>${fmt(new Date(sd.departureTime))}</b></div>
+        <div class="detail">${t.stopCount ? t.stopCount+" stops · " : ""}get off at <b>${esc(sd.arrivalStop?.name||"stop")}</b> · ${fmt(new Date(sd.arrivalTime))}</div>
+      </div></div>`;
+  }).join("");
+
+  return `<div class="card">
+    <div class="route-head"><div class="leave">${leaveHtml}</div>
+      <div class="total">${esc(total)}<br>${arriveTxt}</div></div>
+    ${rows}</div>`;
+}
+
+renderChips();
+</script>
+</body>
+</html>
