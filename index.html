@@ -135,6 +135,10 @@ h1{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-
 .actions a{flex:1;text-align:center;padding:13px;border-radius:12px;font-weight:700;text-decoration:none;background:var(--soft);color:var(--ink)}
 .actions a.primary{background:var(--ink);color:var(--bg)}
 
+.stopguide{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.sg-h b{display:block;font-size:17px;font-weight:800}
+.sg-h span{display:block;color:var(--mute);font-size:14px;margin-top:2px}
+.sg-map{width:100%;height:230px;border:0;border-radius:14px;margin-top:12px;background:var(--soft)}
 .loading{padding:8px 0}
 .loading div{height:72px;border-radius:14px;background:linear-gradient(90deg,var(--soft) 0%,var(--soft2) 50%,var(--soft) 100%);background-size:200% 100%;animation:sh 1.2s infinite linear;margin-bottom:8px}
 @keyframes sh{to{background-position:-200% 0}}
@@ -342,7 +346,8 @@ async function search(){
   out.scrollIntoView({behavior:"smooth", block:"start"});
 
   try{
-    const origin = from ? {address:withCity(from)} : {location:{latLng:await getLocation()}};
+    const here = from ? null : await getLocation();
+    const origin = from ? {address:withCity(from)} : {location:{latLng:here}};
     const deadline = whenMode === "arrive" ? chosenTime() : null;
     const base = {origin, destination:{address:withCity(to)}, travelMode:"TRANSIT",
       computeAlternativeRoutes:true, languageCode:"en", units:"METRIC", regionCode:"AE"};
@@ -378,7 +383,7 @@ async function search(){
     const c = car.status === "fulfilled" && car.value.routes?.[0]
       ? {sec:secs(car.value.routes[0].duration), km:(car.value.routes[0].distanceMeters||0)/1000} : null;
 
-    state = {trips: trips.slice(0,5), car:c, from, to, deadline, open: 0, gm};
+    state = {trips: trips.slice(0,5), car:c, from, to, deadline, open: 0, gm, here};
     render();
     tick = setInterval(render, 30000);
   }catch(e){
@@ -394,6 +399,7 @@ function parse(route){
     if(s.travelMode === "TRANSIT" && s.transitDetails){
       const t = s.transitDetails, line = t.transitLine||{}, sd = t.stopDetails||{};
       parts.push({type:"bus", no:line.nameShort||line.name||"Bus", dest:t.headsign||line.name||"",
+        fromLL:sd.departureStop?.location?.latLng || null, toLL:sd.arrivalStop?.location?.latLng || null,
         from:sd.departureStop?.name||"Bus stop", to:sd.arrivalStop?.name||"Bus stop",
         dep:new Date(sd.departureTime), arr:new Date(sd.arrivalTime), stops:t.stopCount||0});
     }else{
@@ -417,7 +423,7 @@ function parse(route){
 /* ---------- draw ---------- */
 function render(){
   if(!state) return;
-  const {trips, car, from, to, deadline, gm} = state;
+  const {trips, car, from, to, deadline, gm, here} = state;
   const out = $("out");
   const carArrive = car ? new Date(Date.now() + car.sec*1000 + 5*60000) : null;
   const anyOnTime = trips.some(t => !t.late);
@@ -522,7 +528,24 @@ function render(){
       <ol class="journey">${rows.map(r => `<li class="j"><span class="t">${fmtShort(r.t)}</span>
         <span class="line"><span class="dot"></span>${r.seg ? `<span class="seg ${r.seg}"></span>` : ""}</span>
         <div class="what"><div class="stop">${r.stop}</div>${r.sub ? `<div class="sub">${r.sub}</div>` : ""}</div></li>`).join("")}</ol>
-      <div class="actions"><a class="primary" href="${mapsLink(from,to)}" target="_blank" rel="noopener">Start in Google Maps</a></div>
+      ${stopGuide(b)}
+      <div class="actions"><a href="${mapsLink(from,to)}" target="_blank" rel="noopener">Whole trip in Google Maps</a></div>
+    </div>`;
+  }
+
+  /* walking guidance to the exact stop (correct side of the road) */
+  function stopGuide(b){
+    if(!b.fromLL) return "";
+    const stop = `${b.fromLL.latitude},${b.fromLL.longitude}`;
+    const start = here ? `${here.latitude},${here.longitude}` : withCity(from);
+    const walk = new URLSearchParams({api:"1", destination:stop, travelmode:"walking"});
+    if(!here && from) walk.set("origin", withCity(from));
+    const embed = new URLSearchParams({key:API_KEY, origin:start, destination:stop, mode:"walking"});
+    return `<div class="stopguide">
+      <div class="sg-h"><b>Walk to ${esc(b.from)}</b><span>Use the stop for buses going towards ${esc(b.dest)}. The pin marks the right side of the road.</span></div>
+      <iframe class="sg-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Walking route to ${esc(b.from)}"
+        src="https://www.google.com/maps/embed/v1/directions?${embed}"></iframe>
+      <div class="actions" style="margin-top:10px"><a class="primary" href="https://www.google.com/maps/dir/?${walk}" target="_blank" rel="noopener">🚶 Walk to the stop</a></div>
     </div>`;
   }
 }
