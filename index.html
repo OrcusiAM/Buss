@@ -15,185 +15,265 @@
 <!-- Your API key lives in config.js, so updating this file never touches it -->
 <script src="config.js"></script>
 <style>
+/* =========================================================
+   Tokens
+   ========================================================= */
 :root{
-  --bg:#ffffff; --ink:#000000; --soft:#f3f3f3; --soft2:#e9e9e9; --line:#e6e6e6;
-  --mute:#6b6b6b; --best:#05834f; --best-bg:#e6f4ec; --tag:#eeeeee;
-  --led:#ffb627; --alert:#c4281c; --alert-bg:#fdecea;
+  --bg:#ffffff; --ink:#000000; --ink2:#2b2b2b;
+  --soft:#f3f3f3; --soft2:#e8e8e8; --line:#ececec; --mute:#6b6b6b; --faint:#9a9a9a;
+  --led:#ffb627; --sign:#000000;
+  --g:#05834f; --g-bg:#e9f6ef; --y:#a66300; --y-bg:#fdf2db; --r:#c4281c; --r-bg:#fdedeb;
+
+  /* motion */
+  --ease-out:cubic-bezier(.23,1,.32,1);
+  --ease-drawer:cubic-bezier(.32,.72,0,1);
+  --ease-io:cubic-bezier(.77,0,.175,1);
+  --t-press:160ms; --t-fast:200ms; --t-med:300ms; --t-slow:500ms;
+
+  /* space (8pt) */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:40px;
+  --radius:16px;
 }
 @media (prefers-color-scheme: dark){
-  :root{ --bg:#000000; --ink:#ffffff; --soft:#1c1c1c; --soft2:#2a2a2a; --line:#262626;
-    --mute:#a3a3a3; --best:#4ccf8f; --best-bg:#0f2e20; --tag:#262626; --alert:#ff7b70; --alert-bg:#2e1412; }
+  :root{
+    --bg:#000000; --ink:#ffffff; --ink2:#e6e6e6;
+    --soft:#161616; --soft2:#262626; --line:#1f1f1f; --mute:#a1a1a1; --faint:#6f6f6f;
+    --sign:#111111;
+    --g:#4ccf8f; --g-bg:#0c2619; --y:#f5b545; --y-bg:#2b200d; --r:#ff7b70; --r-bg:#2b1211;
+  }
 }
-*{box-sizing:border-box;margin:0}
-html{-webkit-text-size-adjust:100%}
-body{background:var(--bg);color:var(--ink);font:500 16px/1.4 "Figtree",system-ui,sans-serif;
-  padding:calc(10px + env(safe-area-inset-top)) 0 calc(40px + env(safe-area-inset-bottom))}
-button,input{font:inherit;color:inherit}
-button{cursor:pointer;border:0;background:none;text-align:left}
-:focus-visible{outline:3px solid var(--best);outline-offset:2px;border-radius:10px}
-.wrap{max-width:520px;margin:0 auto;padding:0 16px}
 
-header{display:flex;justify-content:space-between;align-items:center;padding:6px 0 18px}
-.logo{font-weight:800;font-size:22px;letter-spacing:-.02em}
-.clock{font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);font:500 16px/1.45 "Figtree",system-ui,-apple-system,sans-serif;
+  padding:calc(var(--s3) + env(safe-area-inset-top)) 0 calc(var(--s7) + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit;border:0;background:none}
+button{cursor:pointer;text-align:left;touch-action:manipulation}
+a{color:inherit}
+:focus-visible{outline:2.5px solid var(--ink);outline-offset:2px;border-radius:12px}
+.wrap{max-width:520px;margin:0 auto;padding:0 var(--s4)}
+.num{font-variant-numeric:tabular-nums}
 
-h1{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:16px}
+/* press feedback: everything tappable shrinks a touch */
+.press{transition:transform var(--t-press) var(--ease-out), background-color var(--t-fast) var(--ease-out), opacity var(--t-fast) var(--ease-out)}
+.press:active{transform:scale(.97)}
 
-/* from / to */
-.trip{background:var(--soft);border-radius:16px;padding:6px 8px 6px 16px;display:grid;grid-template-columns:14px 1fr 44px;column-gap:14px;align-items:center}
-.marks{grid-row:1 / span 3;display:flex;flex-direction:column;align-items:center;align-self:stretch;padding:22px 0}
-.marks .o{width:9px;height:9px;border-radius:50%;background:var(--ink)}
-.marks .l{flex:1;width:2px;background:var(--ink);opacity:.35;margin:4px 0}
-.marks .s{width:9px;height:9px;background:var(--ink)}
-.trip input{width:100%;border:0;background:transparent;outline:none;padding:14px 0;font-size:17px;font-weight:600}
-.trip input::placeholder{color:var(--mute);font-weight:500}
-#to{font-size:19px}
+/* =========================================================
+   Header + planner
+   ========================================================= */
+header{display:flex;justify-content:space-between;align-items:center;height:40px}
+.logo{font-weight:800;font-size:20px;letter-spacing:-.02em;display:flex;align-items:center;gap:var(--s2)}
+.logo i{width:24px;height:24px;border-radius:7px;background:var(--sign);display:grid;place-items:center;
+  font-style:normal;font-family:"Doto",monospace;font-size:13px;color:var(--led)}
+.clock{font-weight:600;font-size:15px;color:var(--mute)}
+
+h1{font-size:32px;font-weight:800;letter-spacing:-.035em;line-height:1.05;margin:var(--s5) 0 var(--s4)}
+
+.trip{background:var(--soft);border-radius:var(--radius);padding:var(--s1) var(--s2) var(--s1) var(--s4);
+  display:grid;grid-template-columns:10px 1fr 40px;column-gap:var(--s4);align-items:center}
+.marks{grid-row:1 / span 3;display:flex;flex-direction:column;align-items:center;align-self:stretch;padding:23px 0}
+.marks .o{width:8px;height:8px;border-radius:50%;background:var(--ink)}
+.marks .l{flex:1;width:1.5px;background:var(--ink);opacity:.3;margin:var(--s1) 0}
+.marks .s{width:8px;height:8px;background:var(--ink)}
+.trip input{width:100%;outline:none;padding:15px 0;font-size:17px;font-weight:600;background:transparent}
+.trip input::placeholder{color:var(--faint);font-weight:500}
 .trip .hr{grid-column:2;height:1px;background:var(--soft2)}
-.swap{grid-column:3;grid-row:1 / span 3;width:40px;height:40px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:700}
+.swap{grid-column:3;grid-row:1 / span 3;width:36px;height:36px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-size:15px;font-weight:700}
+.swap span{display:block;transition:transform var(--t-med) var(--ease-io)}
 
-/* when */
-.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
-.pill{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:var(--soft);font-weight:600;font-size:15px}
-.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
-.time{display:none;padding:8px 12px;border-radius:999px;border:0;background:var(--soft);font-weight:700;font-size:15px}
-.time.show{display:block}
+/* segmented control with a sliding thumb */
+.seg{position:relative;display:grid;grid-template-columns:repeat(3,1fr);background:var(--soft);border-radius:12px;padding:3px;margin-top:var(--s3)}
+.seg .thumb{position:absolute;top:3px;bottom:3px;left:0;border-radius:9px;background:var(--bg);
+  box-shadow:0 1px 2px rgba(0,0,0,.08),0 2px 8px rgba(0,0,0,.06);transition:transform var(--t-med) var(--ease-out), width var(--t-med) var(--ease-out)}
+@media (prefers-color-scheme: dark){ .seg .thumb{background:var(--soft2);box-shadow:none} }
+.seg button{position:relative;z-index:1;text-align:center;padding:9px 4px;font-size:14px;font-weight:600;color:var(--mute);transition:color var(--t-fast) var(--ease-out)}
+.seg button[aria-pressed="true"]{color:var(--ink)}
+
+.reveal{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--t-med) var(--ease-drawer)}
+.reveal > div{overflow:hidden;min-height:0}
+.reveal.show{grid-template-rows:1fr}
+.reveal > div > *{opacity:0;transform:translateY(-4px);transition:opacity var(--t-fast) var(--ease-out), transform var(--t-med) var(--ease-out)}
+.reveal.show > div > *{opacity:1;transform:none}
+.timebox{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);margin-top:var(--s2);
+  background:var(--soft);border-radius:12px;padding:var(--s2) var(--s2) var(--s2) var(--s4)}
+.timebox span{font-size:14px;color:var(--mute);font-weight:600}
+.timebox input{background:var(--bg);border-radius:9px;padding:8px 10px;font-weight:700;font-size:16px}
+@media (prefers-color-scheme: dark){ .timebox input{background:var(--soft2)} }
 
 /* saved places */
-.places{margin-top:18px}
-.place{width:100%;display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
-.place .ic{width:38px;height:38px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:17px;flex-shrink:0}
-.place b{display:block;font-weight:700}
-.place span.addr{display:block;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.places{margin-top:var(--s4)}
+.place{width:100%;display:flex;align-items:center;gap:var(--s3);padding:var(--s3) 0;border-bottom:1px solid var(--line)}
+.place .ic{width:36px;height:36px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:16px;flex-shrink:0}
 .place .txt{flex:1;min-width:0}
-.place .del{color:var(--alert);font-weight:700;font-size:14px}
-.links{display:flex;justify-content:space-between;margin-top:8px;font-size:14px}
-.links button{color:var(--mute);font-weight:600;padding:6px 0}
+.place b{display:block;font-weight:700;font-size:16px}
+.place .addr{display:block;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .del{color:var(--r);font-weight:700;font-size:14px}
+.links{display:flex;justify-content:space-between;align-items:center;margin-top:var(--s1)}
+.links button{color:var(--mute);font-weight:600;font-size:14px;padding:var(--s2) 0}
 
-.favform{display:none;margin-top:12px;gap:8px;flex-direction:column}
-.favform.show{display:flex}
-.favform input{padding:13px 14px;border-radius:12px;border:0;background:var(--soft);font-size:16px}
-.favform .btns{display:flex;gap:8px}
+.favform .fields{display:flex;flex-direction:column;gap:var(--s2);padding-top:var(--s2)}
+.favform input{padding:13px var(--s4);border-radius:12px;background:var(--soft);font-size:16px;outline:none}
+.favform .btns{display:flex;gap:var(--s2)}
 .favform .btns button{flex:1;padding:13px;border-radius:12px;font-weight:700;text-align:center;background:var(--soft)}
 .favform .btns .primary{background:var(--ink);color:var(--bg)}
 
-.go{width:100%;margin-top:18px;padding:17px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:700;font-size:18px;text-align:center}
-.go:active{opacity:.85}
+.go{width:100%;margin-top:var(--s5);padding:17px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:700;font-size:17px;text-align:center}
+.go[disabled]{opacity:.6}
+@media (hover:hover){ .go:hover{opacity:.9} }
 
-.usage{margin-top:10px;font-size:13px;color:var(--mute);display:flex;justify-content:space-between;gap:10px}
-.usage.warn{color:#a15c00}.usage.full{color:var(--alert);font-weight:700}
-@media (prefers-color-scheme: dark){ .usage.warn{color:var(--led)} }
+.usage{margin-top:var(--s3);font-size:13px;color:var(--faint);display:flex;justify-content:space-between;gap:var(--s3)}
+.usage.warn{color:var(--y)}.usage.full{color:var(--r);font-weight:700}
 
-/* results */
-#out{margin-top:28px}
-.out-h{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
-.out-sub{color:var(--mute);font-size:14px;margin-bottom:12px}
-.note{padding:14px 16px;border-radius:14px;background:var(--soft);font-size:15px}
-.note.err{background:var(--alert-bg);color:var(--alert)}
+/* =========================================================
+   Results
+   ========================================================= */
+#out{margin-top:var(--s6);scroll-margin-top:var(--s3)}
+.stamp{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--faint);margin-bottom:var(--s3)}
+.stamp button{font-weight:700;color:var(--ink);font-size:13px;padding:var(--s1) var(--s2);margin-right:calc(var(--s2) * -1);border-radius:8px}
+.note{padding:var(--s4);border-radius:14px;background:var(--soft);font-size:15px}
+.note.err{background:var(--r-bg);color:var(--r)}
+.note b{color:inherit}
+.mapslink{display:block;text-align:center;margin-top:var(--s4);padding:14px;border-radius:12px;background:var(--soft);font-weight:700;text-decoration:none}
 
-/* rating colors */
-:root{ --g:#05834f; --g-bg:#e7f5ed; --y:#a66300; --y-bg:#fdf1d8; --r:#c4281c; --r-bg:#fdecea; }
-@media (prefers-color-scheme: dark){ :root{ --g:#4ccf8f; --g-bg:#0d2a1d; --y:#f5b545; --y-bg:#2e2310; --r:#ff7b70; --r-bg:#2e1412; } }
-
-.rec{border-radius:18px;padding:16px 16px 14px;margin-bottom:26px;border:2px solid}
-.rec.g{background:var(--g-bg);border-color:var(--g)}
-.rec.r{background:var(--r-bg);border-color:var(--r)}
-.rec-k{font-size:13px;font-weight:800;color:var(--g)}
+/* recommendation */
+.rec{border-radius:20px;padding:var(--s4) var(--s4) var(--s4);border:1.5px solid;margin-bottom:var(--s6)}
+.rec.g{background:var(--g-bg);border-color:color-mix(in srgb,var(--g) 55%,transparent)}
+.rec.r{background:var(--r-bg);border-color:color-mix(in srgb,var(--r) 55%,transparent)}
+.rec-k{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:var(--g)}
 .rec.r .rec-k{color:var(--r)}
-.rec-main{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-top:4px}
-.rec-main .no{display:inline-block;background:#000;color:var(--led);font-family:"Doto",monospace;font-weight:900;padding:0 7px;border-radius:6px;font-size:20px;vertical-align:1px}
-.rec-facts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:15px;color:var(--mute)}
-.rec-facts b{color:var(--ink)}
-.rec-alt{margin-top:10px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--g) 30%,transparent);font-size:14px;color:var(--mute)}
+.rec-k i{width:7px;height:7px;border-radius:50%;background:currentColor}
+.rec-main{font-size:22px;font-weight:800;letter-spacing:-.025em;line-height:1.2;margin-top:var(--s2)}
+.no{display:inline-block;background:var(--sign);color:var(--led);font-family:"Doto",monospace;font-weight:900;
+  border-radius:6px;padding:0 6px;line-height:1.3;text-shadow:0 0 6px rgba(255,182,39,.45)}
+.rec-main .no{font-size:20px;vertical-align:1px}
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);margin-top:var(--s4)}
+.rec-grid div{background:var(--bg);border-radius:12px;padding:var(--s2) var(--s3)}
+@media (prefers-color-scheme: dark){ .rec-grid div{background:rgba(255,255,255,.05)} }
+.rec-grid span{display:block;font-size:12px;color:var(--mute);font-weight:600}
+.rec-grid b{display:block;font-size:16px;font-weight:800;letter-spacing:-.01em;white-space:nowrap}
+.rec-grid b.urgent{color:var(--r)}
+.rec-alt{margin-top:var(--s3);font-size:14px;color:var(--mute)}
 .rec-alt b{color:var(--ink)}
 
-.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mute);margin:2px 0 12px}
-.legend span{display:inline-flex;align-items:center;gap:5px}
-.legend i{display:inline-block;width:16px;height:7px;border-radius:4px}
+.out-h{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:var(--s3)}
+.out-h h2{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.legend{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font-size:12px;color:var(--mute);margin-bottom:var(--s4)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:14px;height:6px;border-radius:3px}
 
-.opt{width:100%;display:block;padding:12px 14px 14px;border-radius:16px;border:2px solid;margin-bottom:8px}
-.opt.g{border-color:color-mix(in srgb,var(--g) 45%,transparent)}
-.opt.y{border-color:color-mix(in srgb,var(--y) 45%,transparent)}
-.opt.r{border-color:color-mix(in srgb,var(--r) 35%,transparent)}
-.opt[aria-expanded="true"]{border-width:3px;padding:11px 13px 13px}
-.opt.g[aria-expanded="true"]{border-color:var(--g)}
-.opt.y[aria-expanded="true"]{border-color:var(--y)}
-.opt.r[aria-expanded="true"]{border-color:var(--r)}
-.opt-top{display:flex;align-items:center;gap:14px}
-.opt.r .badge,.opt.r .mid b,.opt.r .right b{opacity:.75}
-
-.rate{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:2px}
-.rate i{width:9px;height:9px;border-radius:50%;flex-shrink:0}
-.rate.g{color:var(--g)}.rate.g i{background:var(--g)}
-.rate.y{color:var(--y)}.rate.y i{background:var(--y)}
-.rate.r{color:var(--r)}.rate.r i{background:var(--r)}
+/* option card */
+.card{border-radius:18px;border:1.5px solid var(--line);margin-bottom:var(--s3);overflow:hidden;
+  transition:border-color var(--t-fast) var(--ease-out), box-shadow var(--t-med) var(--ease-out)}
+.card.g{border-color:color-mix(in srgb,var(--g) 40%,transparent)}
+.card.y{border-color:color-mix(in srgb,var(--y) 40%,transparent)}
+.card.r{border-color:color-mix(in srgb,var(--r) 28%,transparent)}
+.card.open{box-shadow:0 6px 24px -12px rgba(0,0,0,.25)}
+.card.open.g{border-color:var(--g)} .card.open.y{border-color:var(--y)} .card.open.r{border-color:var(--r)}
+.opt{width:100%;display:block;padding:var(--s4)}
+@media (hover:hover){ .card:not(.open) .opt:hover{background:var(--soft)} }
+.opt-top{display:flex;align-items:flex-start;gap:var(--s3)}
+.badge{min-width:54px;height:42px;padding:0 var(--s2);border-radius:10px;background:var(--sign);display:grid;place-items:center;flex-shrink:0;
+  font-family:"Doto",monospace;font-weight:900;font-size:22px;color:var(--led);text-shadow:0 0 6px rgba(255,182,39,.5)}
+.badge.car{font-family:inherit;text-shadow:none;background:var(--soft);font-size:22px}
+.mid{flex:1;min-width:0}
+.rate{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;line-height:1.2;margin-bottom:3px}
+.rate i{width:7px;height:7px;border-radius:50%;flex-shrink:0;background:currentColor}
+.rate.g{color:var(--g)} .rate.y{color:var(--y)} .rate.r{color:var(--r)}
+.mid b{display:block;font-size:17px;font-weight:700;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.meta{display:flex;flex-wrap:wrap;gap:2px var(--s2);color:var(--mute);font-size:14px;margin-top:2px}
+.right{text-align:right;flex-shrink:0;padding-top:1px}
+.right b{display:block;font-size:17px;font-weight:700}
+.right span{color:var(--mute);font-size:14px}
+.card.r .badge,.card.r .mid b,.card.r .right b{opacity:.7}
 
 /* time bar */
-.tbar{display:flex;height:10px;margin-top:12px;gap:2px;border-radius:5px;overflow:hidden}
-.tbar i,.legend i{display:block;height:100%}
-.tbar i:first-child{border-radius:5px 0 0 5px}.tbar i:last-child{border-radius:0 5px 5px 0}
+.tbar{display:flex;height:8px;margin-top:var(--s3);gap:2px;border-radius:4px;overflow:hidden;transform-origin:left}
+.tbar i{display:block;height:100%}
+.tbar i:first-child{border-radius:4px 0 0 4px}.tbar i:last-child{border-radius:0 4px 4px 0}
 i.home{background:repeating-linear-gradient(135deg,var(--soft2) 0 3px,transparent 3px 6px);box-shadow:inset 0 0 0 1px var(--soft2)}
-i.walk{background:repeating-linear-gradient(90deg,var(--mute) 0 3px,transparent 3px 5px)}
+i.walk{background:repeating-linear-gradient(90deg,var(--faint) 0 3px,transparent 3px 5px)}
 i.stop{background:var(--soft2)}
 i.bus{background:var(--ink)}
 i.car{background:var(--led)}
-.badge{min-width:58px;height:44px;padding:0 8px;border-radius:10px;background:#000;display:grid;place-items:center;flex-shrink:0;
-  font-family:"Doto",monospace;font-weight:900;font-size:24px;color:var(--led);text-shadow:0 0 6px rgba(255,182,39,.55)}
-@media (prefers-color-scheme: dark){ .badge{background:#161616;box-shadow:inset 0 0 0 1px #2c2c2c} }
-.badge.car{font-family:inherit;font-size:24px;text-shadow:none;background:var(--soft)}
-.mid{flex:1;min-width:0}
-.tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:3px}
-.tags em{font-style:normal;font-size:12px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--tag)}
-.tags em.best{background:var(--best-bg);color:var(--best)}
-.tags em.late{background:var(--alert-bg);color:var(--alert)}
-.mid b{display:block;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.mid .sub{display:block;color:var(--mute);font-size:14px}
-.right{text-align:right;flex-shrink:0}
-.right b{display:block;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
-.right span{color:var(--mute);font-size:14px}
 
-.detail{padding:6px 4px 18px;margin-bottom:10px;border-bottom:1px solid var(--line)}
-.leave{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 0 4px}
-.leave .big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
-.leave .big small{font-size:18px;font-weight:700;letter-spacing:0;margin-left:3px}
-.leave .lbl{color:var(--mute);font-size:14px;font-weight:600;margin-bottom:4px}
-.leave.urgent .big{color:var(--alert)}
-.hint{color:var(--mute);font-size:15px;margin-top:4px}
-.hint b{color:var(--ink)}
+/* drawer-style expand */
+.more{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--t-med) var(--ease-drawer)}
+.card.open .more{grid-template-rows:1fr}
+.more-in{overflow:hidden;min-height:0}
+.more-pad{padding:0 var(--s4) var(--s4);opacity:0;transform:translateY(-6px);filter:blur(2px);
+  transition:opacity var(--t-fast) var(--ease-out), transform var(--t-med) var(--ease-out), filter var(--t-fast) var(--ease-out)}
+.card.open .more-pad{opacity:1;transform:none;filter:none;transition-delay:60ms}
 
-.journey{list-style:none;padding:16px 0 0}
-.j{display:grid;grid-template-columns:52px 16px 1fr;column-gap:12px}
-.j .t{font-weight:700;text-align:right;font-variant-numeric:tabular-nums;font-size:15px}
-.j .line{display:flex;flex-direction:column;align-items:center}
-.j .dot{width:11px;height:11px;border-radius:50%;background:var(--bg);border:2.5px solid var(--ink);margin-top:4px;flex-shrink:0}
-.j .seg{flex:1;min-height:30px;margin:3px 0}
-.j .seg.walk{border-left:2.5px dotted var(--mute)}
-.j .seg.ride{width:6px;border-radius:3px;background:var(--ink)}
-.j .what{padding-bottom:14px}
-.j .stop{font-weight:700}
-.j .sub{color:var(--mute);font-size:14px}
-.j .no{display:inline-block;background:#000;color:var(--led);font-family:"Doto",monospace;font-weight:900;padding:0 6px;border-radius:5px;margin-right:4px}
-.j:last-child .what{padding-bottom:0}
+.countdown{display:flex;justify-content:space-between;align-items:flex-end;padding:var(--s4) 0 var(--s2);border-top:1px solid var(--line)}
+.countdown .lbl{font-size:13px;color:var(--mute);font-weight:600}
+.countdown .big{font-size:40px;font-weight:800;letter-spacing:-.04em;line-height:1}
+.countdown .big small{font-size:17px;font-weight:700;letter-spacing:0;margin-left:3px}
+.countdown .big.urgent{color:var(--r)}
+.countdown .side{text-align:right}
+.countdown .side b{display:block;font-size:20px;font-weight:800}
+.tick-in{animation:tickIn var(--t-med) var(--ease-out)}
+@keyframes tickIn{from{opacity:0;transform:translateY(6px);filter:blur(2px)}to{opacity:1;transform:none;filter:none}}
 
-.actions{display:flex;gap:8px;margin-top:16px}
-.actions a{flex:1;text-align:center;padding:13px;border-radius:12px;font-weight:700;text-decoration:none;background:var(--soft);color:var(--ink)}
+.summary{display:flex;flex-wrap:wrap;gap:var(--s1) var(--s3);font-size:14px;color:var(--mute);margin-bottom:var(--s2)}
+.summary b{color:var(--ink)}
+
+/* steps */
+.steps{list-style:none;margin-top:var(--s3)}
+.step{display:grid;grid-template-columns:44px 20px 1fr;column-gap:var(--s3)}
+.step .t{font-weight:700;font-size:14px;text-align:right;padding-top:2px}
+.step .rail{display:flex;flex-direction:column;align-items:center}
+.step .dot{width:20px;height:20px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:11px;flex-shrink:0}
+.step .dot.bus{background:var(--ink);color:var(--bg);font-size:10px}
+.step .dot.end{background:var(--ink);width:12px;height:12px;border-radius:3px;margin-top:4px}
+.step .ln{flex:1;width:2px;margin:3px 0;min-height:18px}
+.step .ln.walk{width:0;border-left:2px dotted var(--faint)}
+.step .ln.ride{background:var(--ink);width:4px;border-radius:2px}
+.step .body{padding-bottom:var(--s4)}
+.step:last-child .body{padding-bottom:0}
+.step h4{font-size:16px;font-weight:700;line-height:1.3}
+.step p{font-size:14px;color:var(--mute);margin-top:2px}
+.step p b{color:var(--ink)}
+.tip{display:flex;gap:var(--s2);align-items:flex-start;margin-top:var(--s2);padding:var(--s2) var(--s3);border-radius:10px;background:var(--soft);font-size:13px;color:var(--ink2)}
+.sg-map{width:100%;height:200px;border:0;border-radius:12px;margin-top:var(--s2);background:var(--soft);display:block}
+
+.actions{display:flex;gap:var(--s2);margin-top:var(--s4)}
+.actions a{flex:1;text-align:center;padding:13px var(--s2);border-radius:12px;font-weight:700;font-size:15px;text-decoration:none;background:var(--soft)}
 .actions a.primary{background:var(--ink);color:var(--bg)}
 
-.stopguide{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
-.sg-h b{display:block;font-size:17px;font-weight:800}
-.sg-h span{display:block;color:var(--mute);font-size:14px;margin-top:2px}
-.sg-map{width:100%;height:230px;border:0;border-radius:14px;margin-top:12px;background:var(--soft)}
-.loading{padding:8px 0}
-.loading div{height:72px;border-radius:14px;background:linear-gradient(90deg,var(--soft) 0%,var(--soft2) 50%,var(--soft) 100%);background-size:200% 100%;animation:sh 1.2s infinite linear;margin-bottom:8px}
+.price{display:flex;justify-content:space-between;align-items:flex-end;padding:var(--s4) 0 var(--s2);border-top:1px solid var(--line)}
+.price .big{font-size:36px;font-weight:800;letter-spacing:-.035em;line-height:1}
+.price .big small{font-size:16px;font-weight:700;letter-spacing:0;margin-left:3px}
+.price .lbl{font-size:13px;color:var(--mute);font-weight:600}
+.cmp{margin-top:var(--s3);padding:var(--s3);border-radius:12px;background:var(--soft);font-size:14px;color:var(--ink2)}
+.cmp b{color:var(--ink)}
+.fine{font-size:12px;color:var(--faint);margin-top:var(--s2)}
+
+/* loading */
+.skel{height:92px;border-radius:18px;margin-bottom:var(--s3);
+  background:linear-gradient(90deg,var(--soft) 0%,var(--soft2) 50%,var(--soft) 100%);background-size:200% 100%;animation:sh 1.2s linear infinite}
+.skel:first-child{height:150px;border-radius:20px;margin-bottom:var(--s6)}
 @keyframes sh{to{background-position:-200% 0}}
-@media (prefers-reduced-motion: reduce){ .loading div{animation:none} }
-.mapslink{display:block;text-align:center;margin-top:14px;color:var(--mute);font-weight:600;font-size:15px}
+
+/* =========================================================
+   Entrance choreography (only on a fresh search)
+   ========================================================= */
+.enter .st{animation:rise var(--t-slow) var(--ease-out) both;animation-delay:calc(var(--i,0) * 50ms)}
+@keyframes rise{from{opacity:0;transform:translateY(10px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+.enter .tbar{animation:grow 700ms var(--ease-out) both;animation-delay:calc(var(--i,0) * 50ms + 120ms)}
+@keyframes grow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{transition-duration:0ms !important;animation-duration:0ms !important;animation-delay:0ms !important}
+  .press:active{transform:none}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">My Bus</div>
-    <div class="clock" id="clock"></div>
+    <div class="logo"><i aria-hidden="true">M2</i>My Bus</div>
+    <div class="clock num" id="clock"></div>
   </header>
 
   <h1>Where to?</h1>
@@ -201,29 +281,34 @@ i.car{background:var(--led)}
   <div class="trip">
     <div class="marks" aria-hidden="true"><span class="o"></span><span class="l"></span><span class="s"></span></div>
     <input id="from" placeholder="Current location" autocomplete="off" aria-label="From">
-    <button class="swap" id="swapBtn" type="button" aria-label="Swap from and to">⇅</button>
+    <button class="swap press" id="swapBtn" type="button" aria-label="Swap from and to"><span>⇅</span></button>
     <div class="hr"></div>
     <input id="to" placeholder="Where are you going?" autocomplete="off" aria-label="To" enterkeyhint="search">
   </div>
 
-  <div class="row" role="group" aria-label="When">
-    <button type="button" class="pill" data-mode="now" aria-pressed="true">🕒 Leave now</button>
-    <button type="button" class="pill" data-mode="depart" aria-pressed="false">Leave at</button>
-    <button type="button" class="pill" data-mode="arrive" aria-pressed="false">Arrive by</button>
-    <input type="time" id="time" class="time" aria-label="Time">
+  <div class="seg" id="seg" role="group" aria-label="When">
+    <span class="thumb" id="thumb" aria-hidden="true"></span>
+    <button type="button" data-mode="now" aria-pressed="true">Leave now</button>
+    <button type="button" data-mode="depart" aria-pressed="false">Leave at</button>
+    <button type="button" data-mode="arrive" aria-pressed="false">Arrive by</button>
   </div>
+  <div class="reveal" id="timeReveal"><div>
+    <label class="timebox"><span id="timeLbl">Leave at</span><input type="time" id="time" class="num"></label>
+  </div></div>
 
   <div class="places" id="places"></div>
-  <div class="favform" id="favform">
-    <input id="favName" placeholder="Name, like Home or Work" autocomplete="off">
-    <input id="favAddr" placeholder="Place, like Mazyad Mall" autocomplete="off">
-    <div class="btns">
-      <button type="button" id="favCancel">Cancel</button>
-      <button type="button" id="favSave" class="primary">Save place</button>
+  <div class="reveal favform" id="favform"><div>
+    <div class="fields">
+      <input id="favName" placeholder="Name, like Home or Work" autocomplete="off">
+      <input id="favAddr" placeholder="Place, like Mazyad Mall" autocomplete="off">
+      <div class="btns">
+        <button type="button" id="favCancel" class="press">Cancel</button>
+        <button type="button" id="favSave" class="primary press">Save place</button>
+      </div>
     </div>
-  </div>
+  </div></div>
 
-  <button class="go" id="goBtn" type="button">Find buses</button>
+  <button class="go press" id="goBtn" type="button">Find buses</button>
   <div class="usage" id="usage" aria-live="polite"></div>
 
   <section id="out" aria-live="polite"></section>
@@ -231,7 +316,7 @@ i.car{background:var(--led)}
 
 <script>
 /* The key comes from config.js:  window.MYBUS_KEY = "AIza...";  */
-const API_KEY = (window.MYBUS_KEY && !window.MYBUS_KEY.startsWith("PASTE")) ? window.MYBUS_KEY : "";
+const API_KEY = (window.MYBUS_KEY && !String(window.MYBUS_KEY).startsWith("PASTE")) ? window.MYBUS_KEY : "";
 
 /* Safety limits for Google requests (each search uses 3).
    Keep DAILY_LIMIT a bit BELOW the quota you set in Google Cloud. */
@@ -240,8 +325,9 @@ const MONTHLY_LIMIT = 2500;
 const WARN_AT = 0.8;
 const PER_SEARCH = 3;
 
-/* How the app ranks trips: arrival time + this many minutes per minute of walking */
+/* Ranking: arrival time + this many minutes per minute of walking */
 const WALK_PENALTY = 1.5;
+const PICKUP_MIN = 5;   // minutes to get a taxi
 
 const TZ = "Asia/Dubai";
 const $ = id => document.getElementById(id);
@@ -251,14 +337,15 @@ let activeField = "to", whenMode = "now", editing = false, state = null, tick = 
 const load = (k,d) => { try{ const v = localStorage.getItem("mybus_"+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
 const save = (k,v) => { try{ localStorage.setItem("mybus_"+k, JSON.stringify(v)); }catch(e){} };
 
-/* ---------- time helpers ---------- */
-const fmt = d => d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ});
+/* ---------- helpers ---------- */
+const fmt = d => new Date(d).toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ});
 const fmtShort = d => fmt(d).replace(/ ?(AM|PM)/,"");
 const secs = s => parseInt(String(s||"0").replace("s",""),10) || 0;
 const mins = s => Math.max(1, Math.round(s/60));
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const withCity = s => /\b(uae|united arab emirates|abu dhabi|dubai|al ain)\b/i.test(s) ? s : s + ", Abu Dhabi, UAE";
-function clock(){ $("clock").textContent = fmt(new Date()); }
+const metres = m => m >= 1000 ? (m/1000).toFixed(1) + " km" : Math.round(m/10)*10 + " m";
+function clock(){ $("clock").textContent = fmt(Date.now()); }
 clock(); setInterval(clock, 15000);
 
 /* ---------- usage counter (this device only) ---------- */
@@ -278,8 +365,27 @@ function renderUsage(){
   box.className = "usage" + (full ? " full" : warn ? " warn" : "");
   box.innerHTML = full
     ? `<span>Limit reached. Searches open Google Maps until ${u.today + PER_SEARCH > DAILY_LIMIT ? "tomorrow" : "next month"}.</span>`
-    : `<span>${warn ? "Close to your limit: " : ""}${left} searches left today</span><span>${u.thisMonth}/${MONTHLY_LIMIT} this month</span>`;
+    : `<span>${warn ? "Close to your limit · " : ""}${left} searches left today</span><span class="num">${u.thisMonth}/${MONTHLY_LIMIT} this month</span>`;
 }
+
+/* ---------- segmented control ---------- */
+function moveThumb(){
+  const on = document.querySelector("#seg button[aria-pressed='true']");
+  $("thumb").style.width = on.offsetWidth + "px";
+  $("thumb").style.transform = `translateX(${on.offsetLeft}px)`;
+}
+document.querySelectorAll("#seg button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#seg button").forEach(x => x.setAttribute("aria-pressed","false"));
+  b.setAttribute("aria-pressed","true"); whenMode = b.dataset.mode; moveThumb();
+  $("timeReveal").classList.toggle("show", whenMode !== "now");
+  $("timeLbl").textContent = whenMode === "arrive" ? "Arrive by" : "Leave at";
+  if(whenMode !== "now" && !$("time").value){
+    const d = new Date(Date.now()+30*60000);
+    $("time").value = String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+  }
+});
+window.addEventListener("resize", moveThumb);
+document.fonts?.ready?.then(moveThumb);
 
 /* ---------- saved places ---------- */
 let favs = load("favs", []);
@@ -287,7 +393,7 @@ const icon = n => /home|casa/i.test(n) ? "🏠" : /work|office|trabajo|baker|tra
 function renderPlaces(){
   const box = $("places");
   box.innerHTML = favs.map((f,i) => `
-    <button type="button" class="place" data-i="${i}">
+    <button type="button" class="place press" data-i="${i}">
       <span class="ic" aria-hidden="true">${icon(f.name)}</span>
       <span class="txt"><b>${esc(f.name)}</b><span class="addr">${esc(f.address)}</span></span>
       ${editing ? `<span class="del">Delete</span>` : ""}
@@ -302,7 +408,11 @@ function renderPlaces(){
     $(activeField).value = favs[i].address;
     if(activeField === "to") search(); else { activeField = "to"; $("to").focus(); }
   });
-  $("addPlace").onclick = () => { $("favform").classList.add("show"); $("favAddr").value = $(activeField).value || ""; $("favName").value = ""; $("favName").focus(); };
+  $("addPlace").onclick = () => {
+    $("favform").classList.add("show");
+    $("favAddr").value = $(activeField).value || ""; $("favName").value = "";
+    setTimeout(() => $("favName").focus(), 150);
+  };
   if($("editPlaces")) $("editPlaces").onclick = () => { editing = !editing; renderPlaces(); };
 }
 $("favCancel").onclick = () => $("favform").classList.remove("show");
@@ -314,17 +424,12 @@ $("favSave").onclick = () => {
 
 /* ---------- inputs ---------- */
 ["from","to"].forEach(id => $(id).addEventListener("focus", () => activeField = id));
-$("swapBtn").onclick = () => { const a = $("from").value; $("from").value = $("to").value; $("to").value = a; };
+let swapTurns = 0;
+$("swapBtn").onclick = () => {
+  const a = $("from").value; $("from").value = $("to").value; $("to").value = a;
+  swapTurns++; $("swapBtn").firstElementChild.style.transform = `rotate(${swapTurns*180}deg)`;
+};
 $("to").addEventListener("keydown", e => { if(e.key === "Enter"){ e.target.blur(); search(); } });
-document.querySelectorAll(".pill[data-mode]").forEach(b => b.onclick = () => {
-  document.querySelectorAll(".pill[data-mode]").forEach(x => x.setAttribute("aria-pressed","false"));
-  b.setAttribute("aria-pressed","true"); whenMode = b.dataset.mode;
-  $("time").classList.toggle("show", whenMode !== "now");
-  if(whenMode !== "now" && !$("time").value){
-    const d = new Date(Date.now()+30*60000);
-    $("time").value = String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
-  }
-});
 function chosenTime(){
   const [h,m] = $("time").value.split(":").map(Number);
   const d = new Date(); d.setHours(h,m,0,0);
@@ -354,7 +459,7 @@ function uberLink(from,to){
   return "https://m.uber.com/ul/?" + p;
 }
 
-/* ---------- price estimates (official Abu Dhabi rates, no Google credits used) ----------
+/* ---------- prices (official Abu Dhabi rates, no Google credits used) ----------
    Bus: AED 2 boarding + AED 0.05 per km (transfers within 60 min are free)
    Taxi: AED 5.00 day / 5.50 night flag fall + AED 1.82 per km, minimum AED 12,
          booking fee AED 4 day / 5 night when booked by app, plus some traffic waiting */
@@ -363,14 +468,13 @@ function taxiFare(km, carMin){
   const h = +new Date().toLocaleString("en-US",{hour:"numeric",hour12:false,timeZone:TZ});
   const night = h >= 22 || h < 6;
   const meter = Math.max(12, (night ? 5.5 : 5) + 1.82*km);
-  const freeFlowMin = km / 60 * 60;                       // ~60 km/h average
-  const waiting = Math.max(0, carMin - freeFlowMin) * 0.5 * 0.5; // part of slow traffic billed at AED 0.50/min
+  const waiting = Math.max(0, carMin - km) * 0.25;   // slow traffic, billed at AED 0.50/min about half the time
   const low = Math.round(meter), high = Math.round(meter + waiting + (night ? 5 : 4));
-  return {low, high, mid:(low+high)/2};
+  return {low, high, mid:(low+high)/2, night};
 }
 const aed = n => "AED " + (Number.isInteger(n) ? n : n.toFixed(2));
 
-/* ---------- Google calls ---------- */
+/* ---------- Google ---------- */
 async function callRoutes(body, mask){
   addUsage(1);
   const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
@@ -390,8 +494,7 @@ async function search(){
   const out = $("out"), from = $("from").value.trim(), to = $("to").value.trim();
   clearInterval(tick);
   if(!to){ out.innerHTML = `<p class="note err">Add where you're going.</p>`; $("to").focus(); return; }
-  const gm = `<a class="mapslink" href="${mapsLink(from,to)}" target="_blank" rel="noopener">Open in Google Maps</a>`;
-
+  const gm = `<a class="mapslink press" href="${mapsLink(from,to)}" target="_blank" rel="noopener">Open in Google Maps</a>`;
   if(!API_KEY){
     out.innerHTML = `<p class="note"><b>Bus details need your API key.</b> Add it to config.js in your GitHub repo. Until then, Google Maps can show this trip.</p>${gm}`;
     return;
@@ -401,8 +504,9 @@ async function search(){
     out.innerHTML = `<p class="note err"><b>Limit reached.</b> To keep Google free, the app stopped asking Google for bus details. Google Maps still works.</p>${gm}`;
     return;
   }
-  out.innerHTML = `<div class="loading" aria-label="Searching"><div></div><div></div><div></div></div>`;
-  out.scrollIntoView({behavior:"smooth", block:"start"});
+  $("goBtn").disabled = true; $("goBtn").textContent = "Finding buses…";
+  out.innerHTML = `<div aria-label="Searching"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>`;
+  out.scrollIntoView({behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block:"start"});
 
   try{
     const here = from ? null : await getLocation();
@@ -421,7 +525,6 @@ async function search(){
     ]);
     if([fast,easy,car].every(r => r.status === "rejected")) throw fast.reason;
 
-    // merge both bus searches, remove duplicates and buses you can't catch
     const seen = new Set(), trips = [];
     for(const res of [fast, easy]){
       if(res.status !== "fulfilled") continue;
@@ -442,15 +545,17 @@ async function search(){
     const c = car.status === "fulfilled" && car.value.routes?.[0]
       ? {sec:secs(car.value.routes[0].duration), km:(car.value.routes[0].distanceMeters||0)/1000} : null;
 
-    state = {trips: trips.slice(0,5), car:c, from, to, deadline, open: 0, gm, here};
-    render();
-    tick = setInterval(render, 30000);
+    state = {trips: trips.slice(0,5), car:c, from, to, deadline, gm, here, at:new Date(), open:0};
+    render(true);
+    tick = setInterval(updateClocks, 20000);
   }catch(e){
     out.innerHTML = `<p class="note err">${esc(e.message)}</p>${gm}`;
+  }finally{
+    $("goBtn").disabled = false; $("goBtn").textContent = "Find buses";
   }
 }
 
-/* ---------- turn Google's steps into a simple trip ---------- */
+/* ---------- Google steps → simple trip ---------- */
 function parse(route){
   const steps = (route.legs||[]).flatMap(l => l.steps||[]);
   const parts = [];
@@ -458,7 +563,7 @@ function parse(route){
     if(s.travelMode === "TRANSIT" && s.transitDetails){
       const t = s.transitDetails, line = t.transitLine||{}, sd = t.stopDetails||{};
       parts.push({type:"bus", no:line.nameShort||line.name||"Bus", dest:t.headsign||line.name||"",
-        fromLL:sd.departureStop?.location?.latLng || null, toLL:sd.arrivalStop?.location?.latLng || null,
+        fromLL:sd.departureStop?.location?.latLng || null,
         from:sd.departureStop?.name||"Bus stop", to:sd.arrivalStop?.name||"Bus stop",
         dep:new Date(sd.departureTime), arr:new Date(sd.arrivalTime), stops:t.stopCount||0, m:s.distanceMeters||0});
     }else{
@@ -473,204 +578,265 @@ function parse(route){
   const before = parts.slice(0,i0).reduce((a,p)=>a+p.sec,0);
   const after = parts.slice(iN+1).reduce((a,p)=>a+p.sec,0);
   const walkSec = parts.filter(p => p.type === "walk").reduce((a,p)=>a+p.sec,0);
-  const busKm = buses.reduce((a,b)=>a+b.m,0)/1000;
-  return {parts, buses, walk:Math.round(walkSec/60), walkFirst:Math.round(before/60), fare:busFare(busKm),
+  const walkM = parts.filter(p => p.type === "walk").reduce((a,p)=>a+p.m,0);
+  return {parts, buses, walk:Math.round(walkSec/60), walkM,
+    fare:busFare(buses.reduce((a,b)=>a+b.m,0)/1000),
     leave:new Date(buses[0].dep - before*1000),
     arrive:new Date(buses[buses.length-1].arr.getTime() + after*1000),
     total:mins(secs(route.duration))};
 }
 
+/* ---------- countdown ---------- */
+function leaveText(ts){
+  const m = Math.round((ts - Date.now())/60000);
+  if(m <= 0) return {lbl:"Leave", big:"Now", short:"Leave now", urgent:true};
+  if(m < 60) return {lbl:"Leave in", big:`${m}<small>min</small>`, short:`In ${m} min`, urgent:m <= 5};
+  return {lbl:"Leave at", big:fmt(ts).replace(/ ?(AM|PM)/,"<small>$1</small>"), short:fmt(ts), urgent:false};
+}
+function updateClocks(){
+  document.querySelectorAll("[data-leave]").forEach(el => {
+    const L = leaveText(+el.dataset.leave), html = el.dataset.mode === "short" ? L.short : L.big;
+    if(el.innerHTML !== html){
+      el.innerHTML = html; el.classList.toggle("urgent", L.urgent);
+      el.classList.remove("tick-in"); void el.offsetWidth; el.classList.add("tick-in");
+    }
+    const lbl = el.closest(".countdown")?.querySelector(".lbl");
+    if(lbl && el.dataset.mode !== "short") lbl.textContent = L.lbl;
+  });
+}
+
 /* ---------- draw ---------- */
-function render(){
+function render(fresh){
   if(!state) return;
   const {trips, car, from, to, deadline, gm, here} = state;
-  const out = $("out");
-  const carArrive = car ? new Date(Date.now() + car.sec*1000 + 5*60000) : null;
+  const out = $("out"), now = Date.now();
+  const carArrive = car ? new Date(now + car.sec*1000 + PICKUP_MIN*60000) : null;
   const taxi = car ? taxiFare(car.km, mins(car.sec)) : null;
-  const anyOnTime = trips.some(t => !t.late);
-
   const busBest = trips.find(t => !t.late);
   const taxiFirst = car && !busBest;
-  const now = Date.now();
 
-  /* ---- rating: green / yellow / red, always compared with the best bus ---- */
-  if(trips.length){
-    const minWalk = Math.min(...trips.map(t => t.walk));
-    trips.forEach((t,i) => {
-      t.extras = [];
-      if(t.walk === minWalk && trips.length > 1) t.extras.push("Least walking");
-      if(t.late){ t.rate = "r"; t.label = `Arrives after ${fmt(deadline)}`; return; }
-      if(t === busBest){ t.rate = "g"; t.label = "Best choice"; return; }
-      const later = Math.round((t.arrive - busBest.arrive)/60000), moreWalk = t.walk - busBest.walk;
-      const diff = t.score - busBest.score;
-      const why = later > 0 ? `${later} min later` : moreWalk > 0 ? `${moreWalk} min more walking` : "";
-      if(diff <= 10){ t.rate = "g"; t.label = "Also good"; }
-      else if(diff <= 25){ t.rate = "y"; t.label = "Okay" + (why ? " · " + why : ""); }
-      else { t.rate = "r"; t.label = "Not worth it" + (why ? " · " + why : ""); }
-    });
-  }
-  let taxiRate = null;
+  /* ratings — always compared with the best bus */
+  const minWalk = trips.length ? Math.min(...trips.map(t => t.walk)) : 0;
+  trips.forEach(t => {
+    if(t.late){ t.rate = "r"; t.label = `Arrives after ${fmt(deadline)}`; return; }
+    if(t === busBest){ t.rate = "g"; t.label = "Best choice"; return; }
+    const later = Math.round((t.arrive - busBest.arrive)/60000), moreWalk = t.walk - busBest.walk, diff = t.score - busBest.score;
+    const why = later > 0 ? `${later} min later` : moreWalk > 0 ? `${moreWalk} min more walking` : "";
+    if(diff <= 10){ t.rate = "g"; t.label = t.walk === minWalk ? "Also good · least walking" : "Also good"; }
+    else if(diff <= 25){ t.rate = "y"; t.label = "Okay" + (why ? " · " + why : ""); }
+    else { t.rate = "r"; t.label = "Not worth it" + (why ? " · " + why : ""); }
+  });
+  let tr = null;
   if(car){
     const saved = busBest ? Math.round((busBest.arrive - carArrive)/60000) : 0;
     const extra = busBest ? Math.round(taxi.mid - busBest.fare) : 0;
-    if(taxiFirst) taxiRate = {rate:"g", label:"Only way on time"};
-    else if(saved >= 20 && extra/saved <= 2) taxiRate = {rate:"g", label:`Good if you're in a hurry · saves ${saved} min`};
-    else if(saved >= 8) taxiRate = {rate:"y", label:`Saves ${saved} min · costs ~AED ${extra} more`};
-    else taxiRate = {rate:"r", label: saved > 0 ? `Only ${saved} min faster · ~AED ${extra} more` : "No faster than the bus"};
-    taxiRate.saved = saved; taxiRate.extra = extra;
+    if(taxiFirst) tr = {rate:"g", label:"Only way on time"};
+    else if(saved >= 20 && extra/saved <= 2) tr = {rate:"g", label:`Good if you're in a hurry · ${saved} min sooner`};
+    else if(saved >= 8) tr = {rate:"y", label:`${saved} min sooner · ~AED ${extra} more`};
+    else tr = {rate:"r", label: saved > 0 ? `Only ${saved} min sooner · ~AED ${extra} more` : "No faster than the bus"};
+    Object.assign(tr, {saved, extra});
   }
 
-  /* ---- time bars: same scale for every option ---- */
+  /* time bars on one shared scale */
+  const span = Math.max(...trips.map(t => +t.arrive), car ? +carArrive : 0) - now || 1;
   function busSegs(t){
     const segs = []; let cur = now;
     if(t.leave > cur){ segs.push(["home", t.leave - cur]); cur = +t.leave; }
     for(const p of t.parts){
-      if(p.type === "walk"){ if(p.sec >= 30){ segs.push(["walk", p.sec*1000]); } cur += p.sec*1000; }
+      if(p.type === "walk"){ if(p.sec >= 30) segs.push(["walk", p.sec*1000]); cur += p.sec*1000; }
       else { if(p.dep > cur) segs.push(["stop", p.dep - cur]); segs.push(["bus", p.arr - p.dep]); cur = +p.arr; }
     }
     return segs;
   }
-  const carSegs = () => [["stop", 5*60000], ["car", car.sec*1000]];
-  const ends = [...trips.map(t => +t.arrive), car ? +carArrive : 0];
-  const span = Math.max(...ends) - now || 1;
   const bar = segs => `<span class="tbar" aria-hidden="true">${segs.map(([k,ms]) =>
-      `<i class="${k}" style="width:${Math.max(1.5, ms/span*100)}%"></i>`).join("")}</span>`;
+    `<i class="${k}" style="width:${Math.max(1.5, ms/span*100)}%"></i>`).join("")}</span>`;
 
+  /* order */
   const rows = [];
   if(taxiFirst) rows.push({kind:"car"});
-  trips.forEach((t,i) => rows.push({kind:"bus", t, i}));
+  trips.forEach(t => rows.push({kind:"bus", t}));
   if(car && !taxiFirst) rows.push({kind:"car"});
-  if(state.open >= rows.length) state.open = 0;
 
-  /* ---- recommendation card ---- */
+  /* recommendation */
   let rec = "";
   if(busBest){
-    const b = busBest.buses[0], inMin = Math.round((busBest.leave - now)/60000);
-    const when = inMin <= 0 ? "Leave now" : inMin < 60 ? `Leave in ${inMin} min` : `Leave at ${fmt(busBest.leave)}`;
-    const hurry = taxiRate && taxiRate.rate !== "r" && taxiRate.saved >= 8
-      ? `<p class="rec-alt">In a hurry? A taxi gets you there <b>${taxiRate.saved} min sooner</b> for about <b>AED ${taxiRate.extra} more</b>.</p>` : "";
-    rec = `<div class="rec g"><span class="rec-k">Recommended</span>
+    const b = busBest.buses[0], L = leaveText(+busBest.leave);
+    rec = `<div class="rec g st" style="--i:0">
+      <span class="rec-k"><i></i>Recommended</span>
       <p class="rec-main">Take bus <span class="no">${esc(b.no)}</span> towards ${esc(b.dest)}</p>
-      <p class="rec-facts"><b>${when}</b><span>Arrive ${fmt(busBest.arrive)}</span><span>🚶 ${busBest.walk} min</span><span>${aed(busBest.fare)}</span></p>${hurry}</div>`;
+      <div class="rec-grid">
+        <div><span>Leave</span><b class="num${L.urgent ? " urgent" : ""}" data-leave="${+busBest.leave}" data-mode="short">${L.short}</b></div>
+        <div><span>Arrive</span><b class="num">${fmt(busBest.arrive)}</b></div>
+        <div><span>Cost</span><b class="num">${aed(busBest.fare)}</b></div>
+      </div>
+      ${tr && tr.rate !== "r" && tr.saved >= 8 ? `<p class="rec-alt">In a hurry? A taxi gets you there <b>${tr.saved} min sooner</b> for about <b>AED ${tr.extra} more</b>.</p>` : ""}
+    </div>`;
   } else if(car){
-    const bookBy = deadline ? new Date(deadline - car.sec*1000 - 5*60000) : null;
-    rec = `<div class="rec r"><span class="rec-k">${deadline ? `No bus arrives by ${fmt(deadline)}` : "No bus you can still catch"}</span>
+    const bookBy = deadline ? new Date(deadline - car.sec*1000 - PICKUP_MIN*60000) : null;
+    rec = `<div class="rec r st" style="--i:0">
+      <span class="rec-k"><i></i>${deadline ? `No bus arrives by ${fmt(deadline)}` : "No bus you can still catch"}</span>
       <p class="rec-main">Take a taxi or Uber</p>
-      <p class="rec-facts"><b>${bookBy && bookBy > now ? `Book by ${fmt(bookBy)}` : "Book now"}</b><span>Arrive ~${fmt(carArrive)}</span><span>~AED ${taxi.low}–${taxi.high}</span></p></div>`;
+      <div class="rec-grid">
+        <div><span>Book</span><b class="num">${bookBy && bookBy > now ? "By " + fmtShort(bookBy) : "Now"}</b></div>
+        <div><span>Arrive</span><b class="num">~${fmt(carArrive)}</b></div>
+        <div><span>Cost</span><b class="num">~${taxi.low}–${taxi.high}</b></div>
+      </div>
+    </div>`;
+  } else {
+    out.innerHTML = `<p class="note">No bus or car route found for this trip. Check the place names, or try Google Maps.</p>${gm}`;
+    return;
   }
 
-  const legend = `<div class="legend" aria-hidden="true"><span><i class="home"></i>Wait at home</span><span><i class="walk"></i>Walk</span><span><i class="stop"></i>Wait at stop</span><span><i class="bus"></i>Bus</span>${car ? `<span><i class="car"></i>Taxi</span>` : ""}</div>`;
+  const legend = `<div class="legend st" style="--i:1" aria-hidden="true"><span><i class="home"></i>Wait at home</span><span><i class="walk"></i>Walk</span><span><i class="stop"></i>Wait at stop</span><span><i class="bus"></i>Bus</span>${car ? `<span><i class="car"></i>Taxi</span>` : ""}</div>`;
 
-  out.innerHTML = rec + `<h2 class="out-h">All options</h2>` + legend +
-    rows.map((r,idx) => {
-      const open = idx === state.open;
-      if(r.kind === "car"){
-        return `<button type="button" class="opt ${taxiRate.rate}" data-row="${idx}" aria-expanded="${open}">
-            <span class="opt-top">
-              <span class="badge car" aria-hidden="true">🚕</span>
-              <span class="mid"><span class="rate ${taxiRate.rate}"><i></i>${esc(taxiRate.label)}</span>
-                <b>Taxi or Uber</b><span class="sub">Door to door · ~AED ${taxi.low}–${taxi.high}</span></span>
-              <span class="right"><b>${fmt(carArrive)}</b><span>${mins(car.sec)+5} min</span></span>
-            </span>${bar(carSegs())}
-          </button>` + (open ? carDetail() : "");
-      }
-      const t = r.t, b = t.buses[0];
-      const subTxt = `Leave ${fmt(t.leave)} · 🚶 ${t.walk} min · ${aed(t.fare)}${t.buses.length > 1 ? ` · ${t.buses.length} buses` : ""}`;
-      return `<button type="button" class="opt ${t.rate}" data-row="${idx}" aria-expanded="${open}">
+  const cards = rows.map((r,idx) => {
+    const i = idx + 2;
+    if(r.kind === "car"){
+      return `<div class="card ${tr.rate} st" style="--i:${i}" data-row="${idx}">
+        <button type="button" class="opt" aria-expanded="false">
           <span class="opt-top">
-            <span class="badge" aria-label="Bus ${esc(b.no)}">${esc(b.no)}</span>
-            <span class="mid"><span class="rate ${t.rate}"><i></i>${esc(t.label)}</span>
-              <b>${esc(b.dest || "Bus " + b.no)}</b><span class="sub">${subTxt}</span></span>
-            <span class="right"><b>${fmt(t.arrive)}</b><span>${t.total} min</span></span>
-          </span>${bar(busSegs(t))}
-        </button>` + (open ? busDetail(t) : "");
-    }).join("") + (trips.length ? "" : gm);
+            <span class="badge car" aria-hidden="true">🚕</span>
+            <span class="mid"><span class="rate ${tr.rate}"><i></i>${esc(tr.label)}</span>
+              <b>Taxi or Uber</b>
+              <span class="meta"><span>Door to door</span><span class="num">~AED ${taxi.low}–${taxi.high}</span></span></span>
+            <span class="right"><b class="num">${fmt(carArrive)}</b><span class="num">${mins(car.sec)+PICKUP_MIN} min</span></span>
+          </span>${bar([["stop", PICKUP_MIN*60000], ["car", car.sec*1000]])}
+        </button>
+        <div class="more"><div class="more-in"><div class="more-pad">${carDetail()}</div></div></div>
+      </div>`;
+    }
+    const t = r.t, b = t.buses[0];
+    return `<div class="card ${t.rate} st" style="--i:${i}" data-row="${idx}">
+      <button type="button" class="opt" aria-expanded="false">
+        <span class="opt-top">
+          <span class="badge" aria-label="Bus ${esc(b.no)}">${esc(b.no)}</span>
+          <span class="mid"><span class="rate ${t.rate}"><i></i>${esc(t.label)}</span>
+            <b>${esc(b.dest || "Bus " + b.no)}</b>
+            <span class="meta"><span class="num">Leave ${fmt(t.leave)}</span><span class="num">🚶 ${t.walk} min</span><span class="num">${aed(t.fare)}</span>${t.buses.length > 1 ? `<span>${t.buses.length} buses</span>` : ""}</span></span>
+          <span class="right"><b class="num">${fmt(t.arrive)}</b><span class="num">${t.total} min</span></span>
+        </span>${bar(busSegs(t))}
+      </button>
+      <div class="more"><div class="more-in"><div class="more-pad">${busDetail(t)}</div></div></div>
+    </div>`;
+  }).join("");
 
-  out.querySelectorAll(".opt").forEach(b => b.onclick = () => {
-    const i = +b.dataset.row; state.open = state.open === i ? -1 : i; render();
+  out.className = fresh ? "enter" : "";
+  out.innerHTML = `
+    <div class="stamp st" style="--i:0"><span>Updated ${fmt(state.at)} · to ${esc(to)}</span><button type="button" id="refresh" class="press">Refresh</button></div>
+    ${rec}
+    <div class="out-h st" style="--i:1"><h2>All options</h2></div>
+    ${legend}${cards}`;
+
+  $("refresh").onclick = search;
+  out.querySelectorAll(".card").forEach(card => {
+    card.querySelector(".opt").onclick = () => toggle(card);
   });
+  const first = out.querySelector(".card");
+  if(first && state.open === 0) setTimeout(() => toggle(first, true), fresh ? 260 : 0);
+
+  function toggle(card, forceOpen){
+    const opening = forceOpen || !card.classList.contains("open");
+    out.querySelectorAll(".card.open").forEach(c => { if(c !== card){ c.classList.remove("open"); c.querySelector(".opt").setAttribute("aria-expanded","false"); } });
+    card.classList.toggle("open", opening);
+    card.querySelector(".opt").setAttribute("aria-expanded", String(opening));
+    state.open = opening ? +card.dataset.row : -1;
+    if(opening){
+      const f = card.querySelector("iframe[data-src]");
+      if(f){ f.src = f.dataset.src; f.removeAttribute("data-src"); }
+    }
+  }
 
   function carDetail(){
-    let line = "";
-    if(deadline){
-      const bookBy = new Date(deadline - car.sec*1000 - 5*60000);
-      line = bookBy > Date.now()
-        ? `<p class="hint">To arrive by <b>${fmt(deadline)}</b>, book it by <b>${fmt(bookBy)}</b>.</p>`
-        : `<p class="hint">Even by car you'd arrive around <b>${fmt(carArrive)}</b>.</p>`;
-    } else line = `<p class="hint">About <b>${mins(car.sec)} min</b> with current traffic, plus a few minutes for pickup.</p>`;
-    let compare = "";
-    if(busBest){
-      const saved = Math.round((busBest.arrive - carArrive)/60000), extra = Math.round(taxi.mid - busBest.fare);
-      compare = saved > 0
-        ? `<p class="hint">Compared with the best bus (${aed(busBest.fare)}): you arrive <b>${saved} min earlier</b> for about <b>AED ${extra} more</b>${saved >= 5 ? ` — roughly <b>AED ${(extra/saved).toFixed(1)} per minute saved</b>` : ""}.</p>`
-        : `<p class="hint">The best bus (${aed(busBest.fare)}) gets you there about as fast.</p>`;
-    }
-    return `<div class="detail">
-      <div class="leave"><div><div class="lbl">Estimated price</div><div class="big">${taxi.low}–${taxi.high}<small>AED</small></div></div>
-        <div style="text-align:right"><div class="lbl">${car.km.toFixed(1)} km</div><div style="font-weight:800;font-size:22px">${mins(car.sec)} min</div></div></div>
-      ${line}${compare}
-      <p class="hint" style="font-size:13px">Estimate from official Abu Dhabi taxi rates. Uber and Careem show the exact price before you confirm.</p>
-      <div class="actions"><a class="primary" href="${uberLink(from,to)}" target="_blank" rel="noopener">Open Uber</a>
-      <a href="${mapsLink(from,to,"driving")}" target="_blank" rel="noopener">Car route</a></div></div>`;
+    const book = deadline ? new Date(deadline - car.sec*1000 - PICKUP_MIN*60000) : null;
+    const when = deadline
+      ? (book > now ? `To arrive by <b>${fmt(deadline)}</b>, book it by <b>${fmt(book)}</b>.` : `Even by car you'd arrive around <b>${fmt(carArrive)}</b>.`)
+      : `About <b>${mins(car.sec)} min</b> with current traffic, plus ~${PICKUP_MIN} min for pickup.`;
+    const cmp = busBest
+      ? (tr.saved > 0
+          ? `Compared with the best bus (${aed(busBest.fare)}): you arrive <b>${tr.saved} min earlier</b> for about <b>AED ${tr.extra} more</b>${tr.saved >= 5 ? ` — about <b>AED ${(tr.extra/tr.saved).toFixed(1)} per minute saved</b>` : ""}.`
+          : `The best bus (${aed(busBest.fare)}) gets you there about as fast.`)
+      : "";
+    return `
+      <div class="price">
+        <div><div class="lbl">Estimated price${taxi.night ? " · night rate" : ""}</div><div class="big num">${taxi.low}–${taxi.high}<small>AED</small></div></div>
+        <div style="text-align:right"><div class="lbl num">${car.km.toFixed(1)} km</div><b class="num" style="font-size:20px;font-weight:800">${mins(car.sec)} min drive</b></div>
+      </div>
+      <p class="fine" style="font-size:14px;color:var(--mute)">${when}</p>
+      ${cmp ? `<div class="cmp">${cmp}</div>` : ""}
+      <div class="actions"><a class="primary press" href="${uberLink(from,to)}" target="_blank" rel="noopener">Open Uber</a>
+        <a class="press" href="${mapsLink(from,to,"driving")}" target="_blank" rel="noopener">Car route</a></div>
+      <p class="fine">Estimate from official Abu Dhabi taxi rates. Uber and Careem show the exact price before you confirm.</p>`;
   }
 
   function busDetail(t){
-    const b = t.buses[0];
-    const inMin = Math.round((t.leave - Date.now())/60000);
-    let lbl, big;
-    if(inMin <= 0){ lbl = "Leave"; big = "Now"; }
-    else if(inMin < 60){ lbl = "Leave in"; big = `${inMin}<small>min</small>`; }
-    else { lbl = "Leave at"; big = fmt(t.leave).replace(/ ?(AM|PM)/,"<small>$1</small>"); }
-    const wait = inMin >= 8
-      ? `<p class="hint">No rush. Bus <b>${esc(b.no)}</b> leaves <b>${esc(b.from)}</b> at <b>${fmt(b.dep)}</b>. Start walking at <b>${fmt(t.leave)}</b>.</p>`
-      : `<p class="hint">Bus <b>${esc(b.no)}</b> leaves <b>${esc(b.from)}</b> at <b>${fmt(b.dep)}</b>.</p>`;
-
-    const rows = [{t:t.leave, stop:"Start", sub:"", seg:null}];
-    t.parts.forEach(p => {
+    const L = leaveText(+t.leave);
+    const steps = [];
+    let cur = +t.leave;
+    t.parts.forEach((p, k) => {
       if(p.type === "walk"){
-        if(p.sec < 30) return;
-        const r = rows[rows.length-1]; r.seg = "walk";
-        r.sub += (r.sub ? "<br>" : "") + `Walk ${mins(p.sec)} min · ${Math.round(p.m)} m`;
+        if(p.sec < 30){ cur += p.sec*1000; return; }
+        const nextBus = t.parts.slice(k+1).find(x => x.type === "bus");
+        const isLast = !nextBus;
+        if(isLast){
+          steps.push({t:cur, dot:"🚶", ln:"walk", h:`Walk to ${esc(to)}`, p:`${mins(p.sec)} min · ${metres(p.m)}`});
+        } else {
+          steps.push({t:cur, dot:"🚶", ln:"walk", h:`Walk to ${esc(nextBus.from)}`, p:`${mins(p.sec)} min · ${metres(p.m)}`, guide:nextBus});
+        }
+        cur += p.sec*1000;
       } else {
-        rows.push({t:p.dep, stop:esc(p.from), sub:`<span class="no">${esc(p.no)}</span> towards ${esc(p.dest)}${p.stops ? ` · ${p.stops} stops` : ""}`, seg:"ride"});
-        rows.push({t:p.arr, stop:esc(p.to), sub:"Get off", seg:null});
+        const wait = Math.round((p.dep - cur)/60000);
+        const rideMin = Math.round((p.arr - p.dep)/60000);
+        steps.push({t:+p.dep, dot:"B", dotCls:"bus", ln:"ride",
+          h:`Board <span class="no">${esc(p.no)}</span> towards ${esc(p.dest)}`,
+          p:`${wait >= 1 ? `You'll wait about <b>${wait} min</b> at the stop. ` : ""}Ride <b>${p.stops || "a few"} stops</b> · ${rideMin} min`,
+          tip:`Check the front sign says <b>${esc(p.dest)}</b> before you get on.`});
+        steps.push({t:+p.arr, dot:"↓", ln:null, h:`Get off at ${esc(p.to)}`, p:p.stops ? `After ${p.stops} stops` : ""});
+        cur = +p.arr;
       }
     });
-    const lastPart = t.parts[t.parts.length-1];
-    if(lastPart.type === "walk" && lastPart.sec >= 30) rows.push({t:t.arrive, stop:esc(to), sub:"Arrive", seg:null});
+    steps.push({t:+t.arrive, dot:"", dotCls:"end", ln:null, h:`Arrive at ${esc(to)}`, p:""});
+    // merge "get off" + final arrival if there is no walk at the end
+    if(steps.length >= 2 && steps[steps.length-2].h.startsWith("Get off") && Math.abs(steps[steps.length-1].t - steps[steps.length-2].t) < 60000){
+      steps[steps.length-2].p = (steps[steps.length-2].p ? steps[steps.length-2].p + " · " : "") + "you're there";
+      steps.pop();
+    }
+    // lines connect to the next step
+    steps.forEach((s,k) => { if(k < steps.length-1 && !s.ln) s.ln = steps[k+1].dot === "🚶" ? "walk" : "walk"; });
 
-    return `<div class="detail">
-      <div class="leave${inMin <= 5 ? " urgent" : ""}">
-        <div><div class="lbl">${lbl}</div><div class="big">${big}</div></div>
-        <div style="text-align:right"><div class="lbl">Arrive</div><div style="font-weight:800;font-size:22px">${fmt(t.arrive)}</div></div>
-      </div>${wait}
-      <ol class="journey">${rows.map(r => `<li class="j"><span class="t">${fmtShort(r.t)}</span>
-        <span class="line"><span class="dot"></span>${r.seg ? `<span class="seg ${r.seg}"></span>` : ""}</span>
-        <div class="what"><div class="stop">${r.stop}</div>${r.sub ? `<div class="sub">${r.sub}</div>` : ""}</div></li>`).join("")}</ol>
-      ${stopGuide(b)}
-      <div class="actions"><a href="${mapsLink(from,to)}" target="_blank" rel="noopener">Whole trip in Google Maps</a></div>
-    </div>`;
-  }
+    const guide = b => {
+      if(!b.fromLL) return "";
+      const stop = `${b.fromLL.latitude},${b.fromLL.longitude}`;
+      const start = here ? `${here.latitude},${here.longitude}` : withCity(from);
+      const walk = new URLSearchParams({api:"1", destination:stop, travelmode:"walking"});
+      if(!here && from) walk.set("origin", withCity(from));
+      const embed = new URLSearchParams({key:API_KEY, origin:start, destination:stop, mode:"walking"});
+      return `<div class="tip">📍<span>Use the stop for buses going <b>towards ${esc(b.dest)}</b>. The pin marks the right side of the road.</span></div>
+        <iframe class="sg-map" data-src="https://www.google.com/maps/embed/v1/directions?${embed}" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Walking route to ${esc(b.from)}"></iframe>
+        <div class="actions" style="margin-top:var(--s2)"><a class="primary press" href="https://www.google.com/maps/dir/?${walk}" target="_blank" rel="noopener">🚶 Walk to the stop</a></div>`;
+    };
 
-  /* walking guidance to the exact stop (correct side of the road) */
-  function stopGuide(b){
-    if(!b.fromLL) return "";
-    const stop = `${b.fromLL.latitude},${b.fromLL.longitude}`;
-    const start = here ? `${here.latitude},${here.longitude}` : withCity(from);
-    const walk = new URLSearchParams({api:"1", destination:stop, travelmode:"walking"});
-    if(!here && from) walk.set("origin", withCity(from));
-    const embed = new URLSearchParams({key:API_KEY, origin:start, destination:stop, mode:"walking"});
-    return `<div class="stopguide">
-      <div class="sg-h"><b>Walk to ${esc(b.from)}</b><span>Use the stop for buses going towards ${esc(b.dest)}. The pin marks the right side of the road.</span></div>
-      <iframe class="sg-map" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Walking route to ${esc(b.from)}"
-        src="https://www.google.com/maps/embed/v1/directions?${embed}"></iframe>
-      <div class="actions" style="margin-top:10px"><a class="primary" href="https://www.google.com/maps/dir/?${walk}" target="_blank" rel="noopener">🚶 Walk to the stop</a></div>
-    </div>`;
+    return `
+      <div class="countdown">
+        <div><div class="lbl">${L.lbl}</div><div class="big num${L.urgent ? " urgent" : ""}" data-leave="${+t.leave}">${L.big}</div></div>
+        <div class="side"><div class="lbl">Arrive</div><b class="num">${fmt(t.arrive)}</b></div>
+      </div>
+      <div class="summary"><span><b class="num">${t.total} min</b> total</span><span>🚶 <b class="num">${t.walk} min</b> (${metres(t.walkM)})</span><span><b class="num">${aed(t.fare)}</b> with Hafilat</span><span>${t.buses.length} bus${t.buses.length > 1 ? "es" : ""}</span></div>
+      <ol class="steps">${steps.map(s => `
+        <li class="step">
+          <span class="t num">${fmtShort(s.t)}</span>
+          <span class="rail"><span class="dot ${s.dotCls||""}" aria-hidden="true">${s.dotCls === "bus" ? "🚌" : s.dot}</span>${s.ln ? `<span class="ln ${s.ln}"></span>` : ""}</span>
+          <div class="body"><h4>${s.h}</h4>${s.p ? `<p>${s.p}</p>` : ""}${s.tip ? `<div class="tip">🪧<span>${s.tip}</span></div>` : ""}${s.guide ? guide(s.guide) : ""}</div>
+        </li>`).join("")}
+      </ol>
+      <div class="tip" style="margin-top:var(--s4)">💳<span>Tap your Hafilat card when you get on <b>and</b> off. Changing buses within 60 minutes is then free.</span></div>
+      <div class="actions"><a class="press" href="${mapsLink(from,to)}" target="_blank" rel="noopener">Whole trip in Google Maps</a></div>`;
   }
 }
 
+/* ---------- start ---------- */
 renderPlaces();
 renderUsage();
+moveThumb();
 </script>
 </body>
 </html>
