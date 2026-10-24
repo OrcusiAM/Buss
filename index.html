@@ -4,339 +4,273 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="My Bus">
-<meta name="theme-color" content="#0d4f57">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <title>My Bus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,400..800&family=Doto:wght@700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Doto:wght@900&display=swap" rel="stylesheet">
+<!-- Your API key lives in config.js, so updating this file never touches it -->
+<script src="config.js"></script>
 <style>
 :root{
-  --sky:#e7efee;        /* page */
-  --paper:#ffffff;      /* surfaces */
-  --ink:#0f2a2e;        /* text */
-  --mute:#5d7376;       /* secondary text */
-  --rule:#d3dfde;       /* lines */
-  --gulf:#0d4f57;       /* brand teal */
-  --gulf-soft:#d6e8e7;
-  --sand:#c9a46a;       /* warm accent */
-  --led:#ffb627;        /* destination sign amber */
-  --sign:#16140f;       /* sign housing */
-  --alert:#b3261e;
+  --bg:#ffffff; --ink:#000000; --soft:#f3f3f3; --soft2:#e9e9e9; --line:#e6e6e6;
+  --mute:#6b6b6b; --best:#05834f; --best-bg:#e6f4ec; --tag:#eeeeee;
+  --led:#ffb627; --alert:#c4281c; --alert-bg:#fdecea;
 }
 @media (prefers-color-scheme: dark){
-  :root{
-    --sky:#0a1c1f; --paper:#11282c; --ink:#e6f0ef; --mute:#8fa7a9; --rule:#21403f;
-    --gulf:#5fc2c4; --gulf-soft:#16393b; --sand:#d8b77f; --alert:#f2827a; --sign:#050504;
-  }
+  :root{ --bg:#000000; --ink:#ffffff; --soft:#1c1c1c; --soft2:#2a2a2a; --line:#262626;
+    --mute:#a3a3a3; --best:#4ccf8f; --best-bg:#0f2e20; --tag:#262626; --alert:#ff7b70; --alert-bg:#2e1412; }
 }
 *{box-sizing:border-box;margin:0}
 html{-webkit-text-size-adjust:100%}
-body{
-  background:var(--sky);color:var(--ink);
-  font:400 16px/1.45 "Archivo",system-ui,sans-serif;
-  padding:0 0 calc(32px + env(safe-area-inset-bottom));
-  min-height:100vh;
-}
+body{background:var(--bg);color:var(--ink);font:500 16px/1.4 "Figtree",system-ui,sans-serif;
+  padding:calc(10px + env(safe-area-inset-top)) 0 calc(40px + env(safe-area-inset-bottom))}
 button,input{font:inherit;color:inherit}
-button{cursor:pointer;border:0;background:none}
-:focus-visible{outline:3px solid var(--sand);outline-offset:2px;border-radius:6px}
+button{cursor:pointer;border:0;background:none;text-align:left}
+:focus-visible{outline:3px solid var(--best);outline-offset:2px;border-radius:10px}
+.wrap{max-width:520px;margin:0 auto;padding:0 16px}
 
-/* ---------- top band ---------- */
-.band{
-  background:var(--gulf);color:#fff;
-  padding:calc(14px + env(safe-area-inset-top)) 16px 64px;
-}
-@media (prefers-color-scheme: dark){ .band{background:#0d3e44} }
-.band-in{max-width:540px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
-.brand{font-weight:800;font-stretch:80%;font-size:26px;letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
-.brand-mark{width:30px;height:30px;border-radius:8px;background:var(--led);display:grid;place-items:center;color:var(--sign);font-size:17px}
-.clock{font-stretch:80%;font-weight:600;font-size:18px;opacity:.85;font-variant-numeric:tabular-nums}
+header{display:flex;justify-content:space-between;align-items:center;padding:6px 0 18px}
+.logo{font-weight:800;font-size:22px;letter-spacing:-.02em}
+.clock{font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}
 
-.wrap{max-width:540px;margin:-48px auto 0;padding:0 16px}
+h1{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-bottom:16px}
 
-/* ---------- planner ---------- */
-.planner{background:var(--paper);border-radius:22px;padding:18px 16px 16px;box-shadow:0 10px 30px -18px rgba(13,79,87,.55)}
-.trip{display:grid;grid-template-columns:22px 1fr 44px;column-gap:10px;align-items:center}
-.rail{grid-row:1 / span 3;align-self:stretch;display:flex;flex-direction:column;align-items:center;padding:16px 0}
-.rail i{width:12px;height:12px;border-radius:50%;border:3px solid var(--gulf);background:var(--paper)}
-.rail i.end{background:var(--gulf)}
-.rail b{flex:1;width:3px;background:repeating-linear-gradient(var(--gulf) 0 5px,transparent 5px 9px);margin:3px 0}
-.place{display:flex;flex-direction:column;padding:6px 0}
-.place label{font-size:13px;color:var(--mute);font-weight:500}
-.place input{border:0;background:transparent;font-size:19px;font-weight:600;padding:2px 0;width:100%;outline:none}
-.place input::placeholder{color:var(--mute);opacity:.7;font-weight:500}
-.sep{grid-column:2;height:1px;background:var(--rule)}
-.swap{grid-column:3;grid-row:1 / span 3;width:44px;height:44px;border-radius:50%;background:var(--gulf-soft);color:var(--gulf);font-size:20px;font-weight:700}
-.here{font-size:13px;color:var(--gulf);font-weight:600;margin-top:2px;align-self:flex-start;padding:2px 0}
+/* from / to */
+.trip{background:var(--soft);border-radius:16px;padding:6px 8px 6px 16px;display:grid;grid-template-columns:14px 1fr 44px;column-gap:14px;align-items:center}
+.marks{grid-row:1 / span 3;display:flex;flex-direction:column;align-items:center;align-self:stretch;padding:22px 0}
+.marks .o{width:9px;height:9px;border-radius:50%;background:var(--ink)}
+.marks .l{flex:1;width:2px;background:var(--ink);opacity:.35;margin:4px 0}
+.marks .s{width:9px;height:9px;background:var(--ink)}
+.trip input{width:100%;border:0;background:transparent;outline:none;padding:14px 0;font-size:17px;font-weight:600}
+.trip input::placeholder{color:var(--mute);font-weight:500}
+#to{font-size:19px}
+.trip .hr{grid-column:2;height:1px;background:var(--soft2)}
+.swap{grid-column:3;grid-row:1 / span 3;width:40px;height:40px;border-radius:50%;background:var(--bg);display:grid;place-items:center;font-weight:700}
 
-.when{display:flex;gap:6px;margin:16px 0 0;overflow-x:auto}
-.when button{flex:1;padding:9px 6px;border-radius:12px;background:var(--sky);font-size:14px;font-weight:600;color:var(--mute);white-space:nowrap}
-.when button[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
-.time{display:none;margin-top:8px;width:100%;padding:10px 12px;border-radius:12px;border:1px solid var(--rule);background:var(--sky);font-size:17px;font-weight:600}
+/* when */
+.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:999px;background:var(--soft);font-weight:600;font-size:15px}
+.pill[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.time{display:none;padding:8px 12px;border-radius:999px;border:0;background:var(--soft);font-weight:700;font-size:15px}
 .time.show{display:block}
 
-.favs{display:flex;gap:8px;overflow-x:auto;margin:16px -16px 0;padding:0 16px 2px;scrollbar-width:none}
-.favs::-webkit-scrollbar{display:none}
-.fav{flex-shrink:0;padding:8px 14px;border-radius:999px;background:var(--gulf-soft);color:var(--gulf);font-weight:600;font-size:15px}
-.fav.add{background:transparent;border:1.5px dashed var(--sand);color:var(--sand)}
-.editing .fav:not(.add){background:transparent;border:1.5px solid var(--alert);color:var(--alert)}
-.favhint{font-size:13px;color:var(--mute);margin-top:8px}
-.favhint button{color:var(--gulf);font-weight:600;font-size:13px;padding:0}
+/* saved places */
+.places{margin-top:18px}
+.place{width:100%;display:flex;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--line)}
+.place .ic{width:38px;height:38px;border-radius:50%;background:var(--soft);display:grid;place-items:center;font-size:17px;flex-shrink:0}
+.place b{display:block;font-weight:700}
+.place span.addr{display:block;color:var(--mute);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.place .txt{flex:1;min-width:0}
+.place .del{color:var(--alert);font-weight:700;font-size:14px}
+.links{display:flex;justify-content:space-between;margin-top:8px;font-size:14px}
+.links button{color:var(--mute);font-weight:600;padding:6px 0}
 
-.favform{display:none;margin-top:12px;padding:12px;border-radius:14px;background:var(--sky);gap:8px;flex-direction:column}
+.favform{display:none;margin-top:12px;gap:8px;flex-direction:column}
 .favform.show{display:flex}
-.favform input{padding:10px 12px;border-radius:10px;border:1px solid var(--rule);background:var(--paper);font-size:16px}
-.favform .row{display:flex;gap:8px}
-.favform .row button{flex:1;padding:10px;border-radius:10px;font-weight:700}
+.favform input{padding:13px 14px;border-radius:12px;border:0;background:var(--soft);font-size:16px}
+.favform .btns{display:flex;gap:8px}
+.favform .btns button{flex:1;padding:13px;border-radius:12px;font-weight:700;text-align:center;background:var(--soft)}
+.favform .btns .primary{background:var(--ink);color:var(--bg)}
 
-.go{margin-top:16px;width:100%;padding:16px;border-radius:16px;background:var(--gulf);color:#fff;font-weight:800;font-size:18px;font-stretch:85%;letter-spacing:.01em}
-@media (prefers-color-scheme: dark){ .go{color:#06282b} }
-.go:active{transform:scale(.99)}
+.go{width:100%;margin-top:18px;padding:17px;border-radius:14px;background:var(--ink);color:var(--bg);font-weight:700;font-size:18px;text-align:center}
+.go:active{opacity:.85}
 
-/* ---------- results ---------- */
-#out{margin-top:22px}
-.note{padding:14px 16px;border-radius:16px;background:var(--paper);color:var(--mute);font-size:15px}
-.note.err{color:var(--alert)}
-.note strong{color:var(--ink)}
+.usage{margin-top:10px;font-size:13px;color:var(--mute);display:flex;justify-content:space-between;gap:10px}
+.usage.warn{color:#a15c00}.usage.full{color:var(--alert);font-weight:700}
+@media (prefers-color-scheme: dark){ .usage.warn{color:var(--led)} }
 
-/* destination sign — the one loud thing */
-.sign{
-  background:var(--sign);border-radius:16px;padding:14px 16px 12px;
-  box-shadow:inset 0 0 0 2px #2b281f, inset 0 0 24px rgba(0,0,0,.8);
-  display:flex;align-items:center;gap:14px;overflow:hidden;
-}
-.sign .no,.sign .dest{
-  font-family:"Doto",monospace;font-weight:900;color:var(--led);
-  text-shadow:0 0 6px rgba(255,182,39,.7),0 0 18px rgba(255,140,0,.35);
-  line-height:1;text-transform:uppercase;
-}
-.sign .no{font-size:46px;flex-shrink:0}
-.sign .dest{font-size:24px;line-height:1.05;letter-spacing:.02em}
-.sign .divider{width:2px;align-self:stretch;background:#2b281f}
-.sign.on .no,.sign.on .dest{animation:boot .9s steps(6) both}
-.sign.on .dest{animation-delay:.15s}
-@keyframes boot{0%{opacity:0}30%{opacity:.9}45%{opacity:.2}100%{opacity:1}}
-@media (prefers-reduced-motion: reduce){ .sign.on .no,.sign.on .dest{animation:none} }
-.sign + .sign{margin-top:8px}
+/* results */
+#out{margin-top:28px}
+.out-h{font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:4px}
+.out-sub{color:var(--mute);font-size:14px;margin-bottom:12px}
+.note{padding:14px 16px;border-radius:14px;background:var(--soft);font-size:15px}
+.note.err{background:var(--alert-bg);color:var(--alert)}
 
-.best{background:var(--paper);border-radius:22px;padding:12px 12px 18px}
-.leave{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;padding:18px 6px 4px}
-.leave .big{font-weight:800;font-stretch:75%;font-size:52px;line-height:.9;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.leave .big small{font-size:22px;font-weight:700;margin-left:4px;letter-spacing:0}
-.leave .lbl{font-size:14px;color:var(--mute);font-weight:600;margin-bottom:6px}
-.leave .side{text-align:right;font-size:15px;color:var(--mute);font-variant-numeric:tabular-nums}
-.leave .side b{display:block;color:var(--ink);font-size:20px;font-stretch:85%}
+.opt{width:100%;display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;border:2px solid transparent;margin-bottom:6px}
+.opt[aria-expanded="true"]{border-color:var(--ink)}
+.opt:not([aria-expanded="true"]):hover{background:var(--soft)}
+.badge{min-width:58px;height:44px;padding:0 8px;border-radius:10px;background:#000;display:grid;place-items:center;flex-shrink:0;
+  font-family:"Doto",monospace;font-weight:900;font-size:24px;color:var(--led);text-shadow:0 0 6px rgba(255,182,39,.55)}
+@media (prefers-color-scheme: dark){ .badge{background:#161616;box-shadow:inset 0 0 0 1px #2c2c2c} }
+.badge.car{font-family:inherit;font-size:24px;text-shadow:none;background:var(--soft)}
+.mid{flex:1;min-width:0}
+.tags{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:3px}
+.tags em{font-style:normal;font-size:12px;font-weight:700;padding:2px 7px;border-radius:6px;background:var(--tag)}
+.tags em.best{background:var(--best-bg);color:var(--best)}
+.tags em.late{background:var(--alert-bg);color:var(--alert)}
+.mid b{display:block;font-size:17px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mid .sub{display:block;color:var(--mute);font-size:14px}
+.right{text-align:right;flex-shrink:0}
+.right b{display:block;font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}
+.right span{color:var(--mute);font-size:14px}
+
+.detail{padding:6px 4px 18px;margin-bottom:10px;border-bottom:1px solid var(--line)}
+.leave{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 0 4px}
+.leave .big{font-size:40px;font-weight:800;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums}
+.leave .big small{font-size:18px;font-weight:700;letter-spacing:0;margin-left:3px}
+.leave .lbl{color:var(--mute);font-size:14px;font-weight:600;margin-bottom:4px}
 .leave.urgent .big{color:var(--alert)}
+.hint{color:var(--mute);font-size:15px;margin-top:4px}
+.hint b{color:var(--ink)}
 
-/* journey line */
-.journey{list-style:none;padding:14px 6px 0;margin:0}
-.j{display:grid;grid-template-columns:56px 18px 1fr;column-gap:10px}
-.j .t{font-weight:700;font-stretch:85%;text-align:right;font-variant-numeric:tabular-nums;padding-top:1px}
+.journey{list-style:none;padding:16px 0 0}
+.j{display:grid;grid-template-columns:52px 16px 1fr;column-gap:12px}
+.j .t{font-weight:700;text-align:right;font-variant-numeric:tabular-nums;font-size:15px}
 .j .line{display:flex;flex-direction:column;align-items:center}
-.j .dot{width:14px;height:14px;border-radius:50%;border:3px solid var(--ink);background:var(--paper);flex-shrink:0;margin-top:3px}
-.j .seg{flex:1;width:4px;min-height:34px;margin:2px 0}
-.j .seg.walk{width:0;border-left:3px dotted var(--mute)}
-.j .seg.ride{width:8px;border-radius:4px}
-.j .what{padding-bottom:16px}
-.j .stop{font-weight:700;font-size:17px;line-height:1.25}
-.j .sub{color:var(--mute);font-size:14px;margin-top:2px}
-.j .chip{display:inline-block;font-weight:800;font-stretch:80%;padding:1px 8px;border-radius:6px;font-size:14px;margin-right:6px}
+.j .dot{width:11px;height:11px;border-radius:50%;background:var(--bg);border:2.5px solid var(--ink);margin-top:4px;flex-shrink:0}
+.j .seg{flex:1;min-height:30px;margin:3px 0}
+.j .seg.walk{border-left:2.5px dotted var(--mute)}
+.j .seg.ride{width:6px;border-radius:3px;background:var(--ink)}
+.j .what{padding-bottom:14px}
+.j .stop{font-weight:700}
+.j .sub{color:var(--mute);font-size:14px}
+.j .no{display:inline-block;background:#000;color:var(--led);font-family:"Doto",monospace;font-weight:900;padding:0 6px;border-radius:5px;margin-right:4px}
 .j:last-child .what{padding-bottom:0}
 
-.others{margin-top:18px}
-.others h2{font-size:15px;font-weight:700;color:var(--mute);margin:0 4px 8px}
-.alt{width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:var(--paper);border-radius:16px;padding:12px 14px;margin-bottom:8px}
-.alt .no{font-family:"Doto",monospace;font-weight:900;font-size:24px;color:var(--led);background:var(--sign);border-radius:8px;padding:6px 8px;min-width:58px;text-align:center}
-.alt .info{flex:1;min-width:0}
-.alt .info b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.alt .info span{color:var(--mute);font-size:14px}
-.alt .when2{font-weight:800;font-stretch:80%;font-size:20px;text-align:right;font-variant-numeric:tabular-nums}
+.actions{display:flex;gap:8px;margin-top:16px}
+.actions a{flex:1;text-align:center;padding:13px;border-radius:12px;font-weight:700;text-decoration:none;background:var(--soft);color:var(--ink)}
+.actions a.primary{background:var(--ink);color:var(--bg)}
 
-.maps{display:block;text-align:center;margin:18px auto 0;padding:12px;color:var(--gulf);font-weight:700;text-decoration:none;border:1.5px solid var(--rule);border-radius:14px}
-
-.usage{margin-top:12px;font-size:13px;color:var(--mute);display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px}
-.usage .meter{flex-basis:100%;height:5px;border-radius:3px;background:var(--sky);overflow:hidden;margin-bottom:4px}
-.usage .meter i{display:block;height:100%;background:var(--gulf);border-radius:3px}
-.usage-num{font-variant-numeric:tabular-nums}
-.usage.warn{color:#9a6400}.usage.warn .meter i{background:var(--led)}
-.usage.full{color:var(--alert);font-weight:600}.usage.full .meter i{background:var(--alert)}
-@media (prefers-color-scheme: dark){ .usage.warn{color:var(--led)} }
-.taxi{background:var(--paper);border-radius:18px;padding:14px 16px;margin-bottom:12px;border-left:6px solid var(--led)}
-.taxi.none{border-left-color:var(--alert)}
-.taxi-head{display:flex;align-items:center;gap:10px;font-size:17px;line-height:1.25}
-.taxi.none .taxi-head b{color:var(--alert)}
-.taxi-ico{font-size:22px}
-.taxi p{margin-top:6px;color:var(--mute);font-size:15px}
-.taxi p b{color:var(--ink)}
-.taxi-btns{display:flex;gap:8px;margin-top:12px}
-.taxi-btns a{flex:1;text-align:center;padding:11px;border-radius:12px;font-weight:700;text-decoration:none;background:var(--sky);color:var(--ink)}
-.taxi-btns a:first-child{background:var(--ink);color:var(--paper)}
-.loading{display:flex;justify-content:center;gap:6px;padding:28px}
-.loading i{width:10px;height:10px;border-radius:50%;background:var(--led);animation:pulse 1s infinite ease-in-out}
-.loading i:nth-child(2){animation-delay:.15s}.loading i:nth-child(3){animation-delay:.3s}
-@keyframes pulse{0%,100%{opacity:.25}50%{opacity:1}}
+.loading{padding:8px 0}
+.loading div{height:72px;border-radius:14px;background:linear-gradient(90deg,var(--soft) 0%,var(--soft2) 50%,var(--soft) 100%);background-size:200% 100%;animation:sh 1.2s infinite linear;margin-bottom:8px}
+@keyframes sh{to{background-position:-200% 0}}
+@media (prefers-reduced-motion: reduce){ .loading div{animation:none} }
+.mapslink{display:block;text-align:center;margin-top:14px;color:var(--mute);font-weight:600;font-size:15px}
 </style>
 </head>
 <body>
-
-<header class="band">
-  <div class="band-in">
-    <div class="brand"><span class="brand-mark" aria-hidden="true">🚌</span>My Bus</div>
+<div class="wrap">
+  <header>
+    <div class="logo">My Bus</div>
     <div class="clock" id="clock"></div>
+  </header>
+
+  <h1>Where to?</h1>
+
+  <div class="trip">
+    <div class="marks" aria-hidden="true"><span class="o"></span><span class="l"></span><span class="s"></span></div>
+    <input id="from" placeholder="Current location" autocomplete="off" aria-label="From">
+    <button class="swap" id="swapBtn" type="button" aria-label="Swap from and to">⇅</button>
+    <div class="hr"></div>
+    <input id="to" placeholder="Where are you going?" autocomplete="off" aria-label="To" enterkeyhint="search">
   </div>
-</header>
 
-<main class="wrap">
-  <section class="planner" aria-label="Plan a trip">
-    <div class="trip">
-      <div class="rail" aria-hidden="true"><i></i><b></b><i class="end"></i></div>
-      <div class="place">
-        <label for="from">From</label>
-        <input id="from" placeholder="My location" autocomplete="off" enterkeyhint="next">
-        <button class="here" id="hereBtn" type="button" hidden>Use my location</button>
-      </div>
-      <button class="swap" id="swapBtn" type="button" aria-label="Swap from and to">⇅</button>
-      <div class="sep"></div>
-      <div class="place">
-        <label for="to">To</label>
-        <input id="to" placeholder="Where are you going?" autocomplete="off" enterkeyhint="go">
-      </div>
-    </div>
-
-    <div class="when" role="group" aria-label="When">
-      <button type="button" data-mode="now" aria-pressed="true">Leave now</button>
-      <button type="button" data-mode="depart" aria-pressed="false">Leave at</button>
-      <button type="button" data-mode="arrive" aria-pressed="false">Arrive by</button>
-    </div>
+  <div class="row" role="group" aria-label="When">
+    <button type="button" class="pill" data-mode="now" aria-pressed="true">🕒 Leave now</button>
+    <button type="button" class="pill" data-mode="depart" aria-pressed="false">Leave at</button>
+    <button type="button" class="pill" data-mode="arrive" aria-pressed="false">Arrive by</button>
     <input type="time" id="time" class="time" aria-label="Time">
+  </div>
 
-    <div class="favs" id="favs"></div>
-    <p class="favhint" id="favhint"></p>
-
-    <div class="favform" id="favform">
-      <input id="favName" placeholder="Name, like Home or Work" autocomplete="off">
-      <input id="favAddr" placeholder="Place, like Mazyad Mall" autocomplete="off">
-      <div class="row">
-        <button type="button" id="favCancel" style="background:var(--paper)">Cancel</button>
-        <button type="button" id="favSave" style="background:var(--gulf);color:var(--paper)">Save place</button>
-      </div>
+  <div class="places" id="places"></div>
+  <div class="favform" id="favform">
+    <input id="favName" placeholder="Name, like Home or Work" autocomplete="off">
+    <input id="favAddr" placeholder="Place, like Mazyad Mall" autocomplete="off">
+    <div class="btns">
+      <button type="button" id="favCancel">Cancel</button>
+      <button type="button" id="favSave" class="primary">Save place</button>
     </div>
+  </div>
 
-    <button class="go" id="goBtn" type="button">Find my bus</button>
-    <div class="usage ok" id="usage" aria-live="polite"></div>
-  </section>
+  <button class="go" id="goBtn" type="button">Find buses</button>
+  <div class="usage" id="usage" aria-live="polite"></div>
 
   <section id="out" aria-live="polite"></section>
-</main>
+</div>
 
 <script>
-/* ================================================================
-   PASTE YOUR GOOGLE MAPS API KEY BETWEEN THE QUOTES BELOW
-   ================================================================ */
-const API_KEY = "AIzaSyBsXTOPd23LPKebYqM9A18_soIW9zUjUgU";
+/* The key comes from config.js:  window.MYBUS_KEY = "AIza...";  */
+const API_KEY = (window.MYBUS_KEY && !window.MYBUS_KEY.startsWith("PASTE")) ? window.MYBUS_KEY : "";
 
-/* Safety limits for Google requests (each search uses 2: bus + car).
+/* Safety limits for Google requests (each search uses 3).
    Keep DAILY_LIMIT a bit BELOW the quota you set in Google Cloud. */
 const DAILY_LIMIT = 90;
-const MONTHLY_LIMIT = 2500;   // far under Google's free monthly amount
-const WARN_AT = 0.8;          // warn at 80%
+const MONTHLY_LIMIT = 2500;
+const WARN_AT = 0.8;
+const PER_SEARCH = 3;
+
+/* How the app ranks trips: arrival time + this many minutes per minute of walking */
+const WALK_PENALTY = 1.5;
 
 const TZ = "Asia/Dubai";
 const $ = id => document.getElementById(id);
-let activeField = "to", whenMode = "now", editing = false, lastRoutes = null, tick = null;
+let activeField = "to", whenMode = "now", editing = false, state = null, tick = null;
 
-/* ---------- storage (own keys so it never mixes with the timesheet app) ---------- */
+/* ---------- storage ---------- */
 const load = (k,d) => { try{ const v = localStorage.getItem("mybus_"+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
 const save = (k,v) => { try{ localStorage.setItem("mybus_"+k, JSON.stringify(v)); }catch(e){} };
 
-/* ---------- usage counter (this device only) ---------- */
-const dayKey = () => new Date().toLocaleDateString("en-CA",{timeZone:TZ});      // 2026-10-24
-const monthKey = () => dayKey().slice(0,7);                                      // 2026-10
-function usage(){
-  const u = load("usage", {});
-  if(u.day !== dayKey()){ u.day = dayKey(); u.today = 0; }
-  if(u.month !== monthKey()){ u.month = monthKey(); u.thisMonth = 0; }
-  return u;
-}
-function addUsage(n){ const u = usage(); u.today += n; u.thisMonth += n; save("usage", u); renderUsage(); }
-function canSpend(n){ const u = usage(); return u.today + n <= DAILY_LIMIT && u.thisMonth + n <= MONTHLY_LIMIT; }
-function renderUsage(){
-  const u = usage(), box = $("usage");
-  const dayPct = u.today / DAILY_LIMIT, monPct = u.thisMonth / MONTHLY_LIMIT, pct = Math.max(dayPct, monPct);
-  const dayFull = u.today + 2 > DAILY_LIMIT, monFull = u.thisMonth + 2 > MONTHLY_LIMIT;
-  const state = (dayFull || monFull) ? "full" : pct >= WARN_AT ? "warn" : "ok";
-  box.className = "usage " + state;
-  const msg = state === "full"
-    ? (dayFull ? "Daily limit reached. Searches open Google Maps instead, for free, until tomorrow."
-                   : "Monthly limit reached. Searches open Google Maps instead, for free, until next month.")
-    : state === "warn"
-    ? `Close to your limit: ${Math.max(0, Math.floor((DAILY_LIMIT - u.today)/2))} searches left today.`
-    : `${Math.floor((DAILY_LIMIT - u.today)/2)} searches left today`;
-  box.innerHTML = `<div class="meter"><i style="width:${Math.min(100, pct*100)}%"></i></div>
-    <span>${msg}</span><span class="usage-num">${u.today}/${DAILY_LIMIT} today · ${u.thisMonth}/${MONTHLY_LIMIT} this month</span>`;
-}
-
-/* ---------- clock ---------- */
+/* ---------- time helpers ---------- */
 const fmt = d => d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ});
+const fmtShort = d => fmt(d).replace(/ ?(AM|PM)/,"");
+const secs = s => parseInt(String(s||"0").replace("s",""),10) || 0;
+const mins = s => Math.max(1, Math.round(s/60));
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const withCity = s => /\b(uae|united arab emirates|abu dhabi|dubai|al ain)\b/i.test(s) ? s : s + ", Abu Dhabi, UAE";
 function clock(){ $("clock").textContent = fmt(new Date()); }
 clock(); setInterval(clock, 15000);
 
-/* ---------- favorites ---------- */
-let favs = load("favs", []);
-function renderFavs(){
-  const box = $("favs"); box.innerHTML = "";
-  box.classList.toggle("editing", editing);
-  favs.forEach((f,i) => {
-    const b = document.createElement("button");
-    b.type = "button"; b.className = "fav";
-    b.textContent = editing ? "✕ " + f.name : f.name;
-    b.onclick = () => {
-      if(editing){ favs.splice(i,1); save("favs",favs); if(!favs.length) editing=false; renderFavs(); return; }
-      $(activeField).value = f.address; updateHere();
-      if(activeField === "from") activeField = "to";
-    };
-    box.appendChild(b);
-  });
-  if(!editing){
-    const add = document.createElement("button");
-    add.type = "button"; add.className = "fav add"; add.textContent = "+ Save a place";
-    add.onclick = openForm; box.appendChild(add);
-  }
-  const hint = $("favhint");
-  if(!favs.length){ hint.textContent = "Save the places you go most, then fill a trip with one tap."; }
-  else{
-    hint.innerHTML = editing
-      ? `Tap a place to delete it. <button type="button" id="doneEdit">Done</button>`
-      : `Tap a place to fill “${activeField === "from" ? "From" : "To"}”. <button type="button" id="editFavs">Edit</button>`;
-    const b = $("doneEdit") || $("editFavs");
-    b.onclick = () => { editing = !editing; renderFavs(); };
-  }
+/* ---------- usage counter (this device only) ---------- */
+const dayKey = () => new Date().toLocaleDateString("en-CA",{timeZone:TZ});
+function usage(){
+  const u = load("usage", {});
+  if(u.day !== dayKey()){ u.day = dayKey(); u.today = 0; }
+  if(u.month !== dayKey().slice(0,7)){ u.month = dayKey().slice(0,7); u.thisMonth = 0; }
+  return u;
 }
-function openForm(){
-  $("favform").classList.add("show");
-  $("favAddr").value = $(activeField).value || "";
-  $("favName").value = ""; $("favName").focus();
+function addUsage(n){ const u = usage(); u.today += n; u.thisMonth += n; save("usage",u); renderUsage(); }
+function canSpend(n){ const u = usage(); return u.today + n <= DAILY_LIMIT && u.thisMonth + n <= MONTHLY_LIMIT; }
+function renderUsage(){
+  const u = usage(), left = Math.max(0, Math.floor((DAILY_LIMIT - u.today)/PER_SEARCH));
+  const full = !canSpend(PER_SEARCH), warn = u.today >= DAILY_LIMIT*WARN_AT || u.thisMonth >= MONTHLY_LIMIT*WARN_AT;
+  const box = $("usage");
+  box.className = "usage" + (full ? " full" : warn ? " warn" : "");
+  box.innerHTML = full
+    ? `<span>Limit reached. Searches open Google Maps until ${u.today + PER_SEARCH > DAILY_LIMIT ? "tomorrow" : "next month"}.</span>`
+    : `<span>${warn ? "Close to your limit: " : ""}${left} searches left today</span><span>${u.thisMonth}/${MONTHLY_LIMIT} this month</span>`;
+}
+
+/* ---------- saved places ---------- */
+let favs = load("favs", []);
+const icon = n => /home|casa/i.test(n) ? "🏠" : /work|office|trabajo|baker|training/i.test(n) ? "💼" : /mall|shop/i.test(n) ? "🛍️" : "📍";
+function renderPlaces(){
+  const box = $("places");
+  box.innerHTML = favs.map((f,i) => `
+    <button type="button" class="place" data-i="${i}">
+      <span class="ic" aria-hidden="true">${icon(f.name)}</span>
+      <span class="txt"><b>${esc(f.name)}</b><span class="addr">${esc(f.address)}</span></span>
+      ${editing ? `<span class="del">Delete</span>` : ""}
+    </button>`).join("") + `
+    <div class="links">
+      <button type="button" id="addPlace">+ Save a place</button>
+      ${favs.length ? `<button type="button" id="editPlaces">${editing ? "Done" : "Edit"}</button>` : ""}
+    </div>`;
+  box.querySelectorAll(".place").forEach(b => b.onclick = () => {
+    const i = +b.dataset.i;
+    if(editing){ favs.splice(i,1); save("favs",favs); if(!favs.length) editing = false; renderPlaces(); return; }
+    $(activeField).value = favs[i].address;
+    if(activeField === "to") search(); else { activeField = "to"; $("to").focus(); }
+  });
+  $("addPlace").onclick = () => { $("favform").classList.add("show"); $("favAddr").value = $(activeField).value || ""; $("favName").value = ""; $("favName").focus(); };
+  if($("editPlaces")) $("editPlaces").onclick = () => { editing = !editing; renderPlaces(); };
 }
 $("favCancel").onclick = () => $("favform").classList.remove("show");
 $("favSave").onclick = () => {
   const name = $("favName").value.trim(), address = $("favAddr").value.trim();
   if(!name || !address){ (name ? $("favAddr") : $("favName")).focus(); return; }
-  favs.push({name,address}); save("favs",favs);
-  $("favform").classList.remove("show"); renderFavs();
+  favs.push({name,address}); save("favs",favs); $("favform").classList.remove("show"); renderPlaces();
 };
 
 /* ---------- inputs ---------- */
-["from","to"].forEach(id => $(id).addEventListener("focus", () => { activeField = id; renderFavs(); }));
-$("from").addEventListener("input", updateHere);
-function updateHere(){ $("hereBtn").hidden = !$("from").value.trim(); }
-$("hereBtn").onclick = () => { $("from").value = ""; updateHere(); };
-$("swapBtn").onclick = () => { const a=$("from").value; $("from").value=$("to").value; $("to").value=a; updateHere(); };
+["from","to"].forEach(id => $(id).addEventListener("focus", () => activeField = id));
+$("swapBtn").onclick = () => { const a = $("from").value; $("from").value = $("to").value; $("to").value = a; };
 $("to").addEventListener("keydown", e => { if(e.key === "Enter"){ e.target.blur(); search(); } });
-
-document.querySelectorAll(".when button").forEach(b => b.onclick = () => {
-  document.querySelectorAll(".when button").forEach(x => x.setAttribute("aria-pressed","false"));
+document.querySelectorAll(".pill[data-mode]").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".pill[data-mode]").forEach(x => x.setAttribute("aria-pressed","false"));
   b.setAttribute("aria-pressed","true"); whenMode = b.dataset.mode;
   $("time").classList.toggle("show", whenMode !== "now");
   if(whenMode !== "now" && !$("time").value){
@@ -344,12 +278,6 @@ document.querySelectorAll(".when button").forEach(b => b.onclick = () => {
     $("time").value = String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
   }
 });
-
-/* ---------- helpers ---------- */
-const secs = s => parseInt(String(s||"0").replace("s",""),10) || 0;
-const mins = s => Math.max(1, Math.round(s/60));
-const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const withCity = s => /\b(uae|united arab emirates|abu dhabi|dubai|al ain)\b/i.test(s) ? s : s + ", Abu Dhabi, UAE";
 function chosenTime(){
   const [h,m] = $("time").value.split(":").map(Number);
   const d = new Date(); d.setHours(h,m,0,0);
@@ -358,71 +286,28 @@ function chosenTime(){
 }
 function getLocation(){
   return new Promise((res,rej) => {
-    if(!navigator.geolocation) return rej(new Error("This device can't share its location. Type where you are in From."));
+    if(!navigator.geolocation) return rej(new Error("This device can't share its location. Type where you are in the first box."));
     navigator.geolocation.getCurrentPosition(
       p => res({latitude:p.coords.latitude, longitude:p.coords.longitude}),
-      () => rej(new Error("Location is off for this page. Allow it in Settings, or type where you are in From.")),
+      () => rej(new Error("Location is off for this page. Allow it in Settings, or type where you are in the first box.")),
       {enableHighAccuracy:true, timeout:10000, maximumAge:60000});
   });
 }
-function mapsLink(from,to){
-  const p = new URLSearchParams({api:"1", destination:withCity(to), travelmode:"transit"});
+
+/* ---------- links ---------- */
+function mapsLink(from,to,mode){
+  const p = new URLSearchParams({api:"1", destination:withCity(to), travelmode:mode||"transit"});
   if(from) p.set("origin", withCity(from));
   return "https://www.google.com/maps/dir/?" + p;
 }
-
-/* ---------- search ---------- */
-$("goBtn").onclick = search;
-async function search(){
-  const out = $("out"), from = $("from").value.trim(), to = $("to").value.trim();
-  clearInterval(tick);
-  if(!to){ out.innerHTML = `<p class="note err">Add where you're going in To.</p>`; $("to").focus(); return; }
-  const fallback = `<a class="maps" href="${mapsLink(from,to)}" target="_blank" rel="noopener">Open this trip in Google Maps</a>`;
-
-  if(!API_KEY || API_KEY.startsWith("PASTE")){
-    out.innerHTML = `<p class="note"><strong>Bus details need your API key.</strong> Paste it at the top of the script in index.html. For now, Google Maps can show this trip.</p>${fallback}`;
-    return;
-  }
-  if(!canSpend(2)){
-    renderUsage();
-    out.innerHTML = `<p class="note err"><strong>Limit reached.</strong> To keep Google free, the app stopped asking Google for bus details. You can still open the trip in Google Maps.</p>${fallback}`;
-    return;
-  }
-  out.innerHTML = `<div class="loading" aria-label="Searching"><i></i><i></i><i></i></div>`;
-  try{
-    const origin = from ? {address:withCity(from)} : {location:{latLng:await getLocation()}};
-    const body = {origin, destination:{address:withCity(to)}, travelMode:"TRANSIT",
-      computeAlternativeRoutes:true, languageCode:"en", units:"METRIC", regionCode:"AE"};
-    if(whenMode === "depart") body.departureTime = chosenTime().toISOString();
-    if(whenMode === "arrive") body.arrivalTime = chosenTime().toISOString();
-
-    const deadline = whenMode === "arrive" ? chosenTime() : null;
-    const driveBody = {origin, destination:{address:withCity(to)}, travelMode:"DRIVE",
-      routingPreference:"TRAFFIC_AWARE", languageCode:"en", units:"METRIC", regionCode:"AE"};
-    const [busRes, carRes] = await Promise.allSettled([
-      callRoutes(body, "routes.duration,routes.legs.steps.travelMode,routes.legs.steps.staticDuration,routes.legs.steps.distanceMeters,routes.legs.steps.transitDetails"),
-      callRoutes(driveBody, "routes.duration,routes.distanceMeters")
-    ]);
-    if(busRes.status === "rejected" && carRes.status === "rejected") throw busRes.reason;
-    const car = carRes.status === "fulfilled" && carRes.value.routes?.[0]
-      ? {sec:secs(carRes.value.routes[0].duration), km:(carRes.value.routes[0].distanceMeters||0)/1000} : null;
-
-    let routes = busRes.status === "fulfilled" ? (busRes.value.routes||[]).map(parse).filter(Boolean) : [];
-    // drop buses you can no longer catch, and (for "Arrive by") ones that get there late
-    const catchable = routes.filter(r => r.leave >= Date.now() - 60000);
-    const onTime = deadline ? catchable.filter(r => r.arrive <= deadline) : catchable;
-    routes = onTime.sort((a,b) => (a.arrive - b.arrive) || (a.leave - b.leave));
-
-    const ctx = {from, to, fallback, car, deadline};
-    if(!routes.length){ out.innerHTML = taxiCard(ctx, "none") + fallback; return; }
-    lastRoutes = {routes, ...ctx};
-    show(0);
-    tick = setInterval(() => show(lastRoutes.idx, true), 30000);
-  }catch(e){
-    out.innerHTML = `<p class="note err">${esc(e.message)}</p>${fallback}`;
-  }
+function uberLink(from,to){
+  const p = new URLSearchParams({action:"setPickup"});
+  if(from) p.set("pickup[formatted_address]", withCity(from)); else p.set("pickup","my_location");
+  p.set("dropoff[formatted_address]", withCity(to));
+  return "https://m.uber.com/ul/?" + p;
 }
 
+/* ---------- Google calls ---------- */
 async function callRoutes(body, mask){
   addUsage(1);
   const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
@@ -434,44 +319,71 @@ async function callRoutes(body, mask){
   if(!r.ok) throw new Error(data?.error?.message || "Google returned error " + r.status);
   return data;
 }
+const BUS_MASK = "routes.duration,routes.legs.steps.travelMode,routes.legs.steps.staticDuration,routes.legs.steps.distanceMeters,routes.legs.steps.transitDetails";
 
-/* ---------- taxi / Uber suggestion ---------- */
-function uberLink(from, to){
-  const p = new URLSearchParams({action:"setPickup"});
-  if(from) p.set("pickup[formatted_address]", withCity(from)); else p.set("pickup","my_location");
-  p.set("dropoff[formatted_address]", withCity(to));
-  return "https://m.uber.com/ul/?" + p;
-}
-function driveLink(from, to){
-  const p = new URLSearchParams({api:"1", destination:withCity(to), travelmode:"driving"});
-  if(from) p.set("origin", withCity(from));
-  return "https://www.google.com/maps/dir/?" + p;
-}
-/* reason: "none" = no bus makes it, "slow" = bus is much slower than a car */
-function taxiCard({from, to, car, deadline}, reason, bus){
-  let title, text;
-  const carMin = car ? mins(car.sec) : null;
-  if(reason === "none"){
-    title = deadline ? `No bus gets you there by ${fmt(deadline)}` : "No bus you can still catch";
-    if(car && deadline){
-      const leaveBy = new Date(deadline - car.sec*1000 - 5*60000); // 5 min to get the car
-      text = leaveBy > Date.now()
-        ? `A taxi takes about <b>${carMin} min</b> (${car.km.toFixed(1)} km). Book it by <b>${fmt(leaveBy)}</b>.`
-        : `A taxi takes about <b>${carMin} min</b>. Even by car you'd arrive around <b>${fmt(new Date(Date.now()+car.sec*1000+5*60000))}</b>.`;
-    } else if(car){
-      text = `A taxi takes about <b>${carMin} min</b> (${car.km.toFixed(1)} km).`;
-    } else text = "Try a taxi or Uber for this trip.";
-  } else {
-    title = `A taxi is ${mins(bus*60 - car.sec)} min faster`;
-    text = `By car it's about <b>${carMin} min</b> (${car.km.toFixed(1)} km). The bus takes <b>${bus} min</b>.`;
+/* ---------- search ---------- */
+$("goBtn").onclick = search;
+async function search(){
+  const out = $("out"), from = $("from").value.trim(), to = $("to").value.trim();
+  clearInterval(tick);
+  if(!to){ out.innerHTML = `<p class="note err">Add where you're going.</p>`; $("to").focus(); return; }
+  const gm = `<a class="mapslink" href="${mapsLink(from,to)}" target="_blank" rel="noopener">Open in Google Maps</a>`;
+
+  if(!API_KEY){
+    out.innerHTML = `<p class="note"><b>Bus details need your API key.</b> Add it to config.js in your GitHub repo. Until then, Google Maps can show this trip.</p>${gm}`;
+    return;
   }
-  return `<aside class="taxi ${reason}">
-    <div class="taxi-head"><span class="taxi-ico" aria-hidden="true">🚕</span><b>${title}</b></div>
-    <p>${text}</p>
-    <div class="taxi-btns">
-      <a href="${uberLink(from,to)}" target="_blank" rel="noopener">Open Uber</a>
-      <a href="${driveLink(from,to)}" target="_blank" rel="noopener">Car route</a>
-    </div></aside>`;
+  if(!canSpend(PER_SEARCH)){
+    renderUsage();
+    out.innerHTML = `<p class="note err"><b>Limit reached.</b> To keep Google free, the app stopped asking Google for bus details. Google Maps still works.</p>${gm}`;
+    return;
+  }
+  out.innerHTML = `<div class="loading" aria-label="Searching"><div></div><div></div><div></div></div>`;
+  out.scrollIntoView({behavior:"smooth", block:"start"});
+
+  try{
+    const origin = from ? {address:withCity(from)} : {location:{latLng:await getLocation()}};
+    const deadline = whenMode === "arrive" ? chosenTime() : null;
+    const base = {origin, destination:{address:withCity(to)}, travelMode:"TRANSIT",
+      computeAlternativeRoutes:true, languageCode:"en", units:"METRIC", regionCode:"AE"};
+    if(whenMode === "depart") base.departureTime = chosenTime().toISOString();
+    if(whenMode === "arrive") base.arrivalTime = deadline.toISOString();
+
+    const [fast, easy, car] = await Promise.allSettled([
+      callRoutes(base, BUS_MASK),
+      callRoutes({...base, transitPreferences:{routingPreference:"LESS_WALKING"}}, BUS_MASK),
+      callRoutes({origin, destination:{address:withCity(to)}, travelMode:"DRIVE", routingPreference:"TRAFFIC_AWARE",
+        languageCode:"en", units:"METRIC", regionCode:"AE"}, "routes.duration,routes.distanceMeters")
+    ]);
+    if([fast,easy,car].every(r => r.status === "rejected")) throw fast.reason;
+
+    // merge both bus searches, remove duplicates and buses you can't catch
+    const seen = new Set(), trips = [];
+    for(const res of [fast, easy]){
+      if(res.status !== "fulfilled") continue;
+      for(const r of (res.value.routes||[])){
+        const t = parse(r); if(!t) continue;
+        const key = t.buses.map(b => b.no).join(">") + "@" + t.buses[0].dep.getTime();
+        if(seen.has(key) || t.leave < Date.now() - 60000) continue;
+        seen.add(key); trips.push(t);
+      }
+    }
+    const nowRef = whenMode === "depart" ? chosenTime() : new Date();
+    trips.forEach(t => {
+      t.late = deadline ? t.arrive > deadline : false;
+      t.score = (t.arrive - nowRef)/60000 + t.walk*WALK_PENALTY + (t.buses.length-1)*8 + (t.late ? 1000 : 0);
+    });
+    trips.sort((a,b) => a.score - b.score);
+
+    const c = car.status === "fulfilled" && car.value.routes?.[0]
+      ? {sec:secs(car.value.routes[0].duration), km:(car.value.routes[0].distanceMeters||0)/1000} : null;
+
+    state = {trips: trips.slice(0,5), car:c, from, to, deadline, open: 0, gm};
+    render();
+    tick = setInterval(render, 30000);
+  }catch(e){
+    out.innerHTML = `<p class="note err">${esc(e.message)}</p>${gm}`;
+  }
 }
 
 /* ---------- turn Google's steps into a simple trip ---------- */
@@ -482,7 +394,6 @@ function parse(route){
     if(s.travelMode === "TRANSIT" && s.transitDetails){
       const t = s.transitDetails, line = t.transitLine||{}, sd = t.stopDetails||{};
       parts.push({type:"bus", no:line.nameShort||line.name||"Bus", dest:t.headsign||line.name||"",
-        color:line.color||"#0d4f57", text:line.textColor||"#ffffff",
         from:sd.departureStop?.name||"Bus stop", to:sd.arrivalStop?.name||"Bus stop",
         dep:new Date(sd.departureTime), arr:new Date(sd.arrivalTime), stops:t.stopCount||0});
     }else{
@@ -494,82 +405,129 @@ function parse(route){
   const buses = parts.filter(p => p.type === "bus");
   if(!buses.length) return null;
   const i0 = parts.indexOf(buses[0]), iN = parts.indexOf(buses[buses.length-1]);
-  const walkBefore = parts.slice(0,i0).reduce((a,p)=>a+p.sec,0);
-  const walkAfter = parts.slice(iN+1).reduce((a,p)=>a+p.sec,0);
-  return {parts, buses,
-    leave:new Date(buses[0].dep - walkBefore*1000),
-    arrive:new Date(buses[buses.length-1].arr.getTime() + walkAfter*1000),
+  const before = parts.slice(0,i0).reduce((a,p)=>a+p.sec,0);
+  const after = parts.slice(iN+1).reduce((a,p)=>a+p.sec,0);
+  const walkSec = parts.filter(p => p.type === "walk").reduce((a,p)=>a+p.sec,0);
+  return {parts, buses, walk:Math.round(walkSec/60), walkFirst:Math.round(before/60),
+    leave:new Date(buses[0].dep - before*1000),
+    arrive:new Date(buses[buses.length-1].arr.getTime() + after*1000),
     total:mins(secs(route.duration))};
 }
 
 /* ---------- draw ---------- */
-function show(idx, quiet){
-  const {routes, fallback, to, car} = lastRoutes; lastRoutes.idx = idx;
-  const R = routes[idx];
-  // suggest a taxi when the bus is at least twice as slow and costs 20+ extra minutes
-  const slow = car && R.total >= 2*mins(car.sec) && R.total - mins(car.sec) >= 20;
-  const taxi = slow ? taxiCard(lastRoutes, "slow", R.total) : "";
-  const inMin = Math.round((R.leave - Date.now())/60000);
-  let big, lbl;
-  if(inMin <= 0){ big = "Now"; lbl = "Leave"; }
-  else if(inMin < 60){ big = `${inMin}<small>min</small>`; lbl = "Leave in"; }
-  else { big = fmt(R.leave).replace(/ ?(AM|PM)/,"<small>$1</small>"); lbl = "Leave at"; }
+function render(){
+  if(!state) return;
+  const {trips, car, from, to, deadline, gm} = state;
+  const out = $("out");
+  const carArrive = car ? new Date(Date.now() + car.sec*1000 + 5*60000) : null;
+  const anyOnTime = trips.some(t => !t.late);
 
-  const signs = R.buses.map(b => `
-    <div class="sign${quiet ? "" : " on"}" role="img" aria-label="Bus ${esc(b.no)} to ${esc(b.dest)}">
-      <span class="no">${esc(b.no)}</span><span class="divider"></span><span class="dest">${esc(b.dest)}</span>
-    </div>`).join("");
-
-  // journey rows
-  const rows = [];
-  rows.push({t:fmt(R.leave), stop:"Start", sub:"", seg:null});
-  R.parts.forEach((p,i) => {
-    if(p.type === "walk"){
-      if(p.sec < 30) return;
-      rows[rows.length-1].seg = {cls:"walk"};
-      rows[rows.length-1].sub += (rows[rows.length-1].sub ? "<br>" : "") + `Walk ${mins(p.sec)} min · ${Math.round(p.m)} m`;
-    }else{
-      rows.push({t:fmt(p.dep), stop:esc(p.from),
-        sub:`<span class="chip" style="background:${esc(p.color)};color:${esc(p.text)}">${esc(p.no)}</span>towards ${esc(p.dest)}${p.stops ? `<br>Ride ${p.stops} stops` : ""}`,
-        seg:{cls:"ride", color:p.color}});
-      rows.push({t:fmt(p.arr), stop:esc(p.to), sub:"Get off here", seg:null});
-    }
-  });
-  const last = rows[rows.length-1];
-  if(last.stop !== esc(to)){
-    const walkAfter = R.parts[R.parts.length-1];
-    if(walkAfter.type === "walk" && walkAfter.sec >= 30){
-      last.seg = {cls:"walk"}; last.sub = `Get off here<br>Walk ${mins(walkAfter.sec)} min · ${Math.round(walkAfter.m)} m`;
-      rows.push({t:fmt(R.arrive), stop:esc(to), sub:"You arrive", seg:null});
-    }
+  // tags
+  if(trips.length){
+    const minWalk = Math.min(...trips.map(t => t.walk));
+    const minArr = Math.min(...trips.map(t => +t.arrive));
+    trips.forEach((t,i) => {
+      t.tags = [];
+      if(i === 0 && !t.late) t.tags.push(["Best","best"]);
+      if(t.walk === minWalk && trips.length > 1) t.tags.push(["Least walking",""]);
+      if(+t.arrive === minArr && trips.length > 1) t.tags.push(["Fastest",""]);
+      if(t.late) t.tags.push([`Arrives after ${fmt(deadline)}`,"late"]);
+    });
   }
-  const journey = rows.map(r => `
-    <li class="j"><span class="t">${r.t.replace(/ ?(AM|PM)/,"")}</span>
-      <span class="line"><span class="dot"></span>${r.seg ? `<span class="seg ${r.seg.cls}"${r.seg.color ? ` style="background:${esc(r.seg.color)}"` : ""}></span>` : ""}</span>
-      <div class="what"><div class="stop">${r.stop}</div>${r.sub ? `<div class="sub">${r.sub}</div>` : ""}</div></li>`).join("");
 
-  const others = routes.map((o,i) => i === idx ? "" : `
-    <button type="button" class="alt" data-i="${i}">
-      <span class="no">${esc(o.buses[0].no)}</span>
-      <span class="info"><b>${esc(o.buses[0].dest)}</b><span>${o.buses.length > 1 ? `${o.buses.length} buses · ` : ""}${o.total} min trip</span></span>
-      <span class="when2">${fmt(o.leave)}</span>
-    </button>`).join("");
+  // when should the taxi appear, and where
+  const busBest = trips.find(t => !t.late);
+  const taxiFirst = car && (!busBest);
+  const taxiUseful = car && busBest && (busBest.total >= 2*mins(car.sec) && busBest.total - mins(car.sec) >= 20);
 
-  $("out").innerHTML = `${taxi}
-    <article class="best">
-      ${signs}
+  const rows = [];
+  if(taxiFirst) rows.push({kind:"car"});
+  trips.forEach((t,i) => rows.push({kind:"bus", t, i}));
+  if(car && !taxiFirst) rows.push({kind:"car"});
+  if(state.open >= rows.length) state.open = 0;
+
+  let title = "Choose a trip", sub = `To ${esc(to)}`;
+  if(!trips.length) { title = deadline ? `No bus gets you there by ${fmt(deadline)}` : "No bus you can still catch"; sub = car ? "A taxi is your best option." : ""; }
+  else if(!anyOnTime) { title = `No bus arrives by ${fmt(deadline)}`; sub = "Take a taxi, or arrive a bit later by bus."; }
+
+  out.innerHTML = `<h2 class="out-h">${title}</h2>${sub ? `<p class="out-sub">${sub}</p>` : ""}` +
+    rows.map((r,idx) => {
+      const open = idx === state.open;
+      if(r.kind === "car"){
+        const tags = taxiFirst ? `<span class="tags"><em class="best">Only way on time</em></span>` :
+          taxiUseful ? `<span class="tags"><em>${mins(busBest.total*60 - car.sec)} min faster than the bus</em></span>` : "";
+        return `<button type="button" class="opt" data-row="${idx}" aria-expanded="${open}">
+            <span class="badge car" aria-hidden="true">🚕</span>
+            <span class="mid">${tags}<b>Taxi or Uber</b><span class="sub">Door to door · ${car.km.toFixed(1)} km</span></span>
+            <span class="right"><b>${fmt(carArrive)}</b><span>${mins(car.sec)} min</span></span>
+          </button>` + (open ? carDetail() : "");
+      }
+      const t = r.t, b = t.buses[0];
+      const subTxt = `Leave ${fmt(t.leave)} · 🚶 ${t.walk} min${t.buses.length > 1 ? ` · ${t.buses.length} buses` : ""}`;
+      return `<button type="button" class="opt" data-row="${idx}" aria-expanded="${open}">
+          <span class="badge" aria-label="Bus ${esc(b.no)}">${esc(b.no)}</span>
+          <span class="mid"><span class="tags">${t.tags.map(([n,c]) => `<em class="${c}">${esc(n)}</em>`).join("")}</span>
+            <b>${esc(b.dest || "Bus " + b.no)}</b><span class="sub">${subTxt}</span></span>
+          <span class="right"><b>${fmt(t.arrive)}</b><span>${t.total} min</span></span>
+        </button>` + (open ? busDetail(t) : "");
+    }).join("") + (trips.length ? "" : gm);
+
+  out.querySelectorAll(".opt").forEach(b => b.onclick = () => {
+    const i = +b.dataset.row; state.open = state.open === i ? -1 : i; render();
+  });
+
+  function carDetail(){
+    let line = "";
+    if(deadline){
+      const bookBy = new Date(deadline - car.sec*1000 - 5*60000);
+      line = bookBy > Date.now()
+        ? `<p class="hint">To arrive by <b>${fmt(deadline)}</b>, book it by <b>${fmt(bookBy)}</b>.</p>`
+        : `<p class="hint">Even by car you'd arrive around <b>${fmt(carArrive)}</b>.</p>`;
+    } else line = `<p class="hint">About <b>${mins(car.sec)} min</b> with current traffic, plus a few minutes for pickup.</p>`;
+    return `<div class="detail">${line}
+      <div class="actions"><a class="primary" href="${uberLink(from,to)}" target="_blank" rel="noopener">Open Uber</a>
+      <a href="${mapsLink(from,to,"driving")}" target="_blank" rel="noopener">Car route</a></div></div>`;
+  }
+
+  function busDetail(t){
+    const b = t.buses[0];
+    const inMin = Math.round((t.leave - Date.now())/60000);
+    let lbl, big;
+    if(inMin <= 0){ lbl = "Leave"; big = "Now"; }
+    else if(inMin < 60){ lbl = "Leave in"; big = `${inMin}<small>min</small>`; }
+    else { lbl = "Leave at"; big = fmt(t.leave).replace(/ ?(AM|PM)/,"<small>$1</small>"); }
+    const wait = inMin >= 8
+      ? `<p class="hint">No rush. Bus <b>${esc(b.no)}</b> leaves <b>${esc(b.from)}</b> at <b>${fmt(b.dep)}</b>. Start walking at <b>${fmt(t.leave)}</b>.</p>`
+      : `<p class="hint">Bus <b>${esc(b.no)}</b> leaves <b>${esc(b.from)}</b> at <b>${fmt(b.dep)}</b>.</p>`;
+
+    const rows = [{t:t.leave, stop:"Start", sub:"", seg:null}];
+    t.parts.forEach(p => {
+      if(p.type === "walk"){
+        if(p.sec < 30) return;
+        const r = rows[rows.length-1]; r.seg = "walk";
+        r.sub += (r.sub ? "<br>" : "") + `Walk ${mins(p.sec)} min · ${Math.round(p.m)} m`;
+      } else {
+        rows.push({t:p.dep, stop:esc(p.from), sub:`<span class="no">${esc(p.no)}</span> towards ${esc(p.dest)}${p.stops ? ` · ${p.stops} stops` : ""}`, seg:"ride"});
+        rows.push({t:p.arr, stop:esc(p.to), sub:"Get off", seg:null});
+      }
+    });
+    const lastPart = t.parts[t.parts.length-1];
+    if(lastPart.type === "walk" && lastPart.sec >= 30) rows.push({t:t.arrive, stop:esc(to), sub:"Arrive", seg:null});
+
+    return `<div class="detail">
       <div class="leave${inMin <= 5 ? " urgent" : ""}">
         <div><div class="lbl">${lbl}</div><div class="big">${big}</div></div>
-        <div class="side">Arrive<b>${fmt(R.arrive)}</b>${R.total} min trip</div>
-      </div>
-      <ol class="journey">${journey}</ol>
-    </article>
-    ${others ? `<section class="others"><h2>Other buses</h2>${others}</section>` : ""}
-    ${fallback}`;
-  document.querySelectorAll(".alt").forEach(b => b.onclick = () => { show(+b.dataset.i); window.scrollTo({top:$("out").offsetTop-12, behavior:"smooth"}); });
+        <div style="text-align:right"><div class="lbl">Arrive</div><div style="font-weight:800;font-size:22px">${fmt(t.arrive)}</div></div>
+      </div>${wait}
+      <ol class="journey">${rows.map(r => `<li class="j"><span class="t">${fmtShort(r.t)}</span>
+        <span class="line"><span class="dot"></span>${r.seg ? `<span class="seg ${r.seg}"></span>` : ""}</span>
+        <div class="what"><div class="stop">${r.stop}</div>${r.sub ? `<div class="sub">${r.sub}</div>` : ""}</div></li>`).join("")}</ol>
+      <div class="actions"><a class="primary" href="${mapsLink(from,to)}" target="_blank" rel="noopener">Start in Google Maps</a></div>
+    </div>`;
+  }
 }
 
-renderFavs();
+renderPlaces();
 renderUsage();
 </script>
 </body>
