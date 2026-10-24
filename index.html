@@ -90,9 +90,52 @@ h1{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1.05;margin-
 .note{padding:14px 16px;border-radius:14px;background:var(--soft);font-size:15px}
 .note.err{background:var(--alert-bg);color:var(--alert)}
 
-.opt{width:100%;display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;border:2px solid transparent;margin-bottom:6px}
-.opt[aria-expanded="true"]{border-color:var(--ink)}
-.opt:not([aria-expanded="true"]):hover{background:var(--soft)}
+/* rating colors */
+:root{ --g:#05834f; --g-bg:#e7f5ed; --y:#a66300; --y-bg:#fdf1d8; --r:#c4281c; --r-bg:#fdecea; }
+@media (prefers-color-scheme: dark){ :root{ --g:#4ccf8f; --g-bg:#0d2a1d; --y:#f5b545; --y-bg:#2e2310; --r:#ff7b70; --r-bg:#2e1412; } }
+
+.rec{border-radius:18px;padding:16px 16px 14px;margin-bottom:26px;border:2px solid}
+.rec.g{background:var(--g-bg);border-color:var(--g)}
+.rec.r{background:var(--r-bg);border-color:var(--r)}
+.rec-k{font-size:13px;font-weight:800;color:var(--g)}
+.rec.r .rec-k{color:var(--r)}
+.rec-main{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.2;margin-top:4px}
+.rec-main .no{display:inline-block;background:#000;color:var(--led);font-family:"Doto",monospace;font-weight:900;padding:0 7px;border-radius:6px;font-size:20px;vertical-align:1px}
+.rec-facts{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:8px;font-size:15px;color:var(--mute)}
+.rec-facts b{color:var(--ink)}
+.rec-alt{margin-top:10px;padding-top:10px;border-top:1px solid color-mix(in srgb,var(--g) 30%,transparent);font-size:14px;color:var(--mute)}
+.rec-alt b{color:var(--ink)}
+
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--mute);margin:2px 0 12px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.legend i{display:inline-block;width:16px;height:7px;border-radius:4px}
+
+.opt{width:100%;display:block;padding:12px 14px 14px;border-radius:16px;border:2px solid;margin-bottom:8px}
+.opt.g{border-color:color-mix(in srgb,var(--g) 45%,transparent)}
+.opt.y{border-color:color-mix(in srgb,var(--y) 45%,transparent)}
+.opt.r{border-color:color-mix(in srgb,var(--r) 35%,transparent)}
+.opt[aria-expanded="true"]{border-width:3px;padding:11px 13px 13px}
+.opt.g[aria-expanded="true"]{border-color:var(--g)}
+.opt.y[aria-expanded="true"]{border-color:var(--y)}
+.opt.r[aria-expanded="true"]{border-color:var(--r)}
+.opt-top{display:flex;align-items:center;gap:14px}
+.opt.r .badge,.opt.r .mid b,.opt.r .right b{opacity:.75}
+
+.rate{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;margin-bottom:2px}
+.rate i{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.rate.g{color:var(--g)}.rate.g i{background:var(--g)}
+.rate.y{color:var(--y)}.rate.y i{background:var(--y)}
+.rate.r{color:var(--r)}.rate.r i{background:var(--r)}
+
+/* time bar */
+.tbar{display:flex;height:10px;margin-top:12px;gap:2px;border-radius:5px;overflow:hidden}
+.tbar i,.legend i{display:block;height:100%}
+.tbar i:first-child{border-radius:5px 0 0 5px}.tbar i:last-child{border-radius:0 5px 5px 0}
+i.home{background:repeating-linear-gradient(135deg,var(--soft2) 0 3px,transparent 3px 6px);box-shadow:inset 0 0 0 1px var(--soft2)}
+i.walk{background:repeating-linear-gradient(90deg,var(--mute) 0 3px,transparent 3px 5px)}
+i.stop{background:var(--soft2)}
+i.bus{background:var(--ink)}
+i.car{background:var(--led)}
 .badge{min-width:58px;height:44px;padding:0 8px;border-radius:10px;background:#000;display:grid;place-items:center;flex-shrink:0;
   font-family:"Doto",monospace;font-weight:900;font-size:24px;color:var(--led);text-shadow:0 0 6px rgba(255,182,39,.55)}
 @media (prefers-color-scheme: dark){ .badge{background:#161616;box-shadow:inset 0 0 0 1px #2c2c2c} }
@@ -446,23 +489,52 @@ function render(){
   const taxi = car ? taxiFare(car.km, mins(car.sec)) : null;
   const anyOnTime = trips.some(t => !t.late);
 
-  // tags
+  const busBest = trips.find(t => !t.late);
+  const taxiFirst = car && !busBest;
+  const now = Date.now();
+
+  /* ---- rating: green / yellow / red, always compared with the best bus ---- */
   if(trips.length){
     const minWalk = Math.min(...trips.map(t => t.walk));
-    const minArr = Math.min(...trips.map(t => +t.arrive));
     trips.forEach((t,i) => {
-      t.tags = [];
-      if(i === 0 && !t.late) t.tags.push(["Best","best"]);
-      if(t.walk === minWalk && trips.length > 1) t.tags.push(["Least walking",""]);
-      if(+t.arrive === minArr && trips.length > 1) t.tags.push(["Fastest",""]);
-      if(t.late) t.tags.push([`Arrives after ${fmt(deadline)}`,"late"]);
+      t.extras = [];
+      if(t.walk === minWalk && trips.length > 1) t.extras.push("Least walking");
+      if(t.late){ t.rate = "r"; t.label = `Arrives after ${fmt(deadline)}`; return; }
+      if(t === busBest){ t.rate = "g"; t.label = "Best choice"; return; }
+      const later = Math.round((t.arrive - busBest.arrive)/60000), moreWalk = t.walk - busBest.walk;
+      const diff = t.score - busBest.score;
+      const why = later > 0 ? `${later} min later` : moreWalk > 0 ? `${moreWalk} min more walking` : "";
+      if(diff <= 10){ t.rate = "g"; t.label = "Also good"; }
+      else if(diff <= 25){ t.rate = "y"; t.label = "Okay" + (why ? " · " + why : ""); }
+      else { t.rate = "r"; t.label = "Not worth it" + (why ? " · " + why : ""); }
     });
   }
+  let taxiRate = null;
+  if(car){
+    const saved = busBest ? Math.round((busBest.arrive - carArrive)/60000) : 0;
+    const extra = busBest ? Math.round(taxi.mid - busBest.fare) : 0;
+    if(taxiFirst) taxiRate = {rate:"g", label:"Only way on time"};
+    else if(saved >= 20 && extra/saved <= 2) taxiRate = {rate:"g", label:`Good if you're in a hurry · saves ${saved} min`};
+    else if(saved >= 8) taxiRate = {rate:"y", label:`Saves ${saved} min · costs ~AED ${extra} more`};
+    else taxiRate = {rate:"r", label: saved > 0 ? `Only ${saved} min faster · ~AED ${extra} more` : "No faster than the bus"};
+    taxiRate.saved = saved; taxiRate.extra = extra;
+  }
 
-  // when should the taxi appear, and where
-  const busBest = trips.find(t => !t.late);
-  const taxiFirst = car && (!busBest);
-  const taxiUseful = car && busBest && (busBest.total >= 2*mins(car.sec) && busBest.total - mins(car.sec) >= 20);
+  /* ---- time bars: same scale for every option ---- */
+  function busSegs(t){
+    const segs = []; let cur = now;
+    if(t.leave > cur){ segs.push(["home", t.leave - cur]); cur = +t.leave; }
+    for(const p of t.parts){
+      if(p.type === "walk"){ if(p.sec >= 30){ segs.push(["walk", p.sec*1000]); } cur += p.sec*1000; }
+      else { if(p.dep > cur) segs.push(["stop", p.dep - cur]); segs.push(["bus", p.arr - p.dep]); cur = +p.arr; }
+    }
+    return segs;
+  }
+  const carSegs = () => [["stop", 5*60000], ["car", car.sec*1000]];
+  const ends = [...trips.map(t => +t.arrive), car ? +carArrive : 0];
+  const span = Math.max(...ends) - now || 1;
+  const bar = segs => `<span class="tbar" aria-hidden="true">${segs.map(([k,ms]) =>
+      `<i class="${k}" style="width:${Math.max(1.5, ms/span*100)}%"></i>`).join("")}</span>`;
 
   const rows = [];
   if(taxiFirst) rows.push({kind:"car"});
@@ -470,31 +542,47 @@ function render(){
   if(car && !taxiFirst) rows.push({kind:"car"});
   if(state.open >= rows.length) state.open = 0;
 
-  let title = "Choose a trip", sub = `To ${esc(to)}`;
-  if(!trips.length) { title = deadline ? `No bus gets you there by ${fmt(deadline)}` : "No bus you can still catch"; sub = car ? "A taxi is your best option." : ""; }
-  else if(!anyOnTime) { title = `No bus arrives by ${fmt(deadline)}`; sub = "Take a taxi, or arrive a bit later by bus."; }
+  /* ---- recommendation card ---- */
+  let rec = "";
+  if(busBest){
+    const b = busBest.buses[0], inMin = Math.round((busBest.leave - now)/60000);
+    const when = inMin <= 0 ? "Leave now" : inMin < 60 ? `Leave in ${inMin} min` : `Leave at ${fmt(busBest.leave)}`;
+    const hurry = taxiRate && taxiRate.rate !== "r" && taxiRate.saved >= 8
+      ? `<p class="rec-alt">In a hurry? A taxi gets you there <b>${taxiRate.saved} min sooner</b> for about <b>AED ${taxiRate.extra} more</b>.</p>` : "";
+    rec = `<div class="rec g"><span class="rec-k">Recommended</span>
+      <p class="rec-main">Take bus <span class="no">${esc(b.no)}</span> towards ${esc(b.dest)}</p>
+      <p class="rec-facts"><b>${when}</b><span>Arrive ${fmt(busBest.arrive)}</span><span>🚶 ${busBest.walk} min</span><span>${aed(busBest.fare)}</span></p>${hurry}</div>`;
+  } else if(car){
+    const bookBy = deadline ? new Date(deadline - car.sec*1000 - 5*60000) : null;
+    rec = `<div class="rec r"><span class="rec-k">${deadline ? `No bus arrives by ${fmt(deadline)}` : "No bus you can still catch"}</span>
+      <p class="rec-main">Take a taxi or Uber</p>
+      <p class="rec-facts"><b>${bookBy && bookBy > now ? `Book by ${fmt(bookBy)}` : "Book now"}</b><span>Arrive ~${fmt(carArrive)}</span><span>~AED ${taxi.low}–${taxi.high}</span></p></div>`;
+  }
 
-  out.innerHTML = `<h2 class="out-h">${title}</h2>${sub ? `<p class="out-sub">${sub}</p>` : ""}` +
+  const legend = `<div class="legend" aria-hidden="true"><span><i class="home"></i>Wait at home</span><span><i class="walk"></i>Walk</span><span><i class="stop"></i>Wait at stop</span><span><i class="bus"></i>Bus</span>${car ? `<span><i class="car"></i>Taxi</span>` : ""}</div>`;
+
+  out.innerHTML = rec + `<h2 class="out-h">All options</h2>` + legend +
     rows.map((r,idx) => {
       const open = idx === state.open;
       if(r.kind === "car"){
-        const saved = busBest ? Math.round((busBest.arrive - carArrive)/60000) : 0;
-        const extra = busBest ? Math.round(taxi.mid - busBest.fare) : 0;
-        const tags = taxiFirst ? `<span class="tags"><em class="best">Only way on time</em></span>` :
-          saved >= 5 ? `<span class="tags"><em${taxiUseful ? ' class="best"' : ""}>Saves ${saved} min for ~AED ${extra} more</em></span>` : "";
-        return `<button type="button" class="opt" data-row="${idx}" aria-expanded="${open}">
-            <span class="badge car" aria-hidden="true">🚕</span>
-            <span class="mid">${tags}<b>Taxi or Uber</b><span class="sub">Door to door · ~AED ${taxi.low}–${taxi.high}</span></span>
-            <span class="right"><b>${fmt(carArrive)}</b><span>${mins(car.sec)} min</span></span>
+        return `<button type="button" class="opt ${taxiRate.rate}" data-row="${idx}" aria-expanded="${open}">
+            <span class="opt-top">
+              <span class="badge car" aria-hidden="true">🚕</span>
+              <span class="mid"><span class="rate ${taxiRate.rate}"><i></i>${esc(taxiRate.label)}</span>
+                <b>Taxi or Uber</b><span class="sub">Door to door · ~AED ${taxi.low}–${taxi.high}</span></span>
+              <span class="right"><b>${fmt(carArrive)}</b><span>${mins(car.sec)+5} min</span></span>
+            </span>${bar(carSegs())}
           </button>` + (open ? carDetail() : "");
       }
       const t = r.t, b = t.buses[0];
       const subTxt = `Leave ${fmt(t.leave)} · 🚶 ${t.walk} min · ${aed(t.fare)}${t.buses.length > 1 ? ` · ${t.buses.length} buses` : ""}`;
-      return `<button type="button" class="opt" data-row="${idx}" aria-expanded="${open}">
-          <span class="badge" aria-label="Bus ${esc(b.no)}">${esc(b.no)}</span>
-          <span class="mid"><span class="tags">${t.tags.map(([n,c]) => `<em class="${c}">${esc(n)}</em>`).join("")}</span>
-            <b>${esc(b.dest || "Bus " + b.no)}</b><span class="sub">${subTxt}</span></span>
-          <span class="right"><b>${fmt(t.arrive)}</b><span>${t.total} min</span></span>
+      return `<button type="button" class="opt ${t.rate}" data-row="${idx}" aria-expanded="${open}">
+          <span class="opt-top">
+            <span class="badge" aria-label="Bus ${esc(b.no)}">${esc(b.no)}</span>
+            <span class="mid"><span class="rate ${t.rate}"><i></i>${esc(t.label)}</span>
+              <b>${esc(b.dest || "Bus " + b.no)}</b><span class="sub">${subTxt}</span></span>
+            <span class="right"><b>${fmt(t.arrive)}</b><span>${t.total} min</span></span>
+          </span>${bar(busSegs(t))}
         </button>` + (open ? busDetail(t) : "");
     }).join("") + (trips.length ? "" : gm);
 
