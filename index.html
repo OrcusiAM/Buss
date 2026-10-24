@@ -156,6 +156,23 @@ button{cursor:pointer;border:0;background:none}
 
 .maps{display:block;text-align:center;margin:18px auto 0;padding:12px;color:var(--gulf);font-weight:700;text-decoration:none;border:1.5px solid var(--rule);border-radius:14px}
 
+.usage{margin-top:12px;font-size:13px;color:var(--mute);display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 10px}
+.usage .meter{flex-basis:100%;height:5px;border-radius:3px;background:var(--sky);overflow:hidden;margin-bottom:4px}
+.usage .meter i{display:block;height:100%;background:var(--gulf);border-radius:3px}
+.usage-num{font-variant-numeric:tabular-nums}
+.usage.warn{color:#9a6400}.usage.warn .meter i{background:var(--led)}
+.usage.full{color:var(--alert);font-weight:600}.usage.full .meter i{background:var(--alert)}
+@media (prefers-color-scheme: dark){ .usage.warn{color:var(--led)} }
+.taxi{background:var(--paper);border-radius:18px;padding:14px 16px;margin-bottom:12px;border-left:6px solid var(--led)}
+.taxi.none{border-left-color:var(--alert)}
+.taxi-head{display:flex;align-items:center;gap:10px;font-size:17px;line-height:1.25}
+.taxi.none .taxi-head b{color:var(--alert)}
+.taxi-ico{font-size:22px}
+.taxi p{margin-top:6px;color:var(--mute);font-size:15px}
+.taxi p b{color:var(--ink)}
+.taxi-btns{display:flex;gap:8px;margin-top:12px}
+.taxi-btns a{flex:1;text-align:center;padding:11px;border-radius:12px;font-weight:700;text-decoration:none;background:var(--sky);color:var(--ink)}
+.taxi-btns a:first-child{background:var(--ink);color:var(--paper)}
 .loading{display:flex;justify-content:center;gap:6px;padding:28px}
 .loading i{width:10px;height:10px;border-radius:50%;background:var(--led);animation:pulse 1s infinite ease-in-out}
 .loading i:nth-child(2){animation-delay:.15s}.loading i:nth-child(3){animation-delay:.3s}
@@ -208,6 +225,7 @@ button{cursor:pointer;border:0;background:none}
     </div>
 
     <button class="go" id="goBtn" type="button">Find my bus</button>
+    <div class="usage ok" id="usage" aria-live="polite"></div>
   </section>
 
   <section id="out" aria-live="polite"></section>
@@ -219,6 +237,12 @@ button{cursor:pointer;border:0;background:none}
    ================================================================ */
 const API_KEY = "PASTE_YOUR_KEY_HERE";
 
+/* Safety limits for Google requests (each search uses 2: bus + car).
+   Keep DAILY_LIMIT a bit BELOW the quota you set in Google Cloud. */
+const DAILY_LIMIT = 90;
+const MONTHLY_LIMIT = 2500;   // far under Google's free monthly amount
+const WARN_AT = 0.8;          // warn at 80%
+
 const TZ = "Asia/Dubai";
 const $ = id => document.getElementById(id);
 let activeField = "to", whenMode = "now", editing = false, lastRoutes = null, tick = null;
@@ -226,6 +250,33 @@ let activeField = "to", whenMode = "now", editing = false, lastRoutes = null, ti
 /* ---------- storage (own keys so it never mixes with the timesheet app) ---------- */
 const load = (k,d) => { try{ const v = localStorage.getItem("mybus_"+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } };
 const save = (k,v) => { try{ localStorage.setItem("mybus_"+k, JSON.stringify(v)); }catch(e){} };
+
+/* ---------- usage counter (this device only) ---------- */
+const dayKey = () => new Date().toLocaleDateString("en-CA",{timeZone:TZ});      // 2026-10-24
+const monthKey = () => dayKey().slice(0,7);                                      // 2026-10
+function usage(){
+  const u = load("usage", {});
+  if(u.day !== dayKey()){ u.day = dayKey(); u.today = 0; }
+  if(u.month !== monthKey()){ u.month = monthKey(); u.thisMonth = 0; }
+  return u;
+}
+function addUsage(n){ const u = usage(); u.today += n; u.thisMonth += n; save("usage", u); renderUsage(); }
+function canSpend(n){ const u = usage(); return u.today + n <= DAILY_LIMIT && u.thisMonth + n <= MONTHLY_LIMIT; }
+function renderUsage(){
+  const u = usage(), box = $("usage");
+  const dayPct = u.today / DAILY_LIMIT, monPct = u.thisMonth / MONTHLY_LIMIT, pct = Math.max(dayPct, monPct);
+  const dayFull = u.today + 2 > DAILY_LIMIT, monFull = u.thisMonth + 2 > MONTHLY_LIMIT;
+  const state = (dayFull || monFull) ? "full" : pct >= WARN_AT ? "warn" : "ok";
+  box.className = "usage " + state;
+  const msg = state === "full"
+    ? (dayFull ? "Daily limit reached. Searches open Google Maps instead, for free, until tomorrow."
+                   : "Monthly limit reached. Searches open Google Maps instead, for free, until next month.")
+    : state === "warn"
+    ? `Close to your limit: ${Math.max(0, Math.floor((DAILY_LIMIT - u.today)/2))} searches left today.`
+    : `${Math.floor((DAILY_LIMIT - u.today)/2)} searches left today`;
+  box.innerHTML = `<div class="meter"><i style="width:${Math.min(100, pct*100)}%"></i></div>
+    <span>${msg}</span><span class="usage-num">${u.today}/${DAILY_LIMIT} today · ${u.thisMonth}/${MONTHLY_LIMIT} this month</span>`;
+}
 
 /* ---------- clock ---------- */
 const fmt = d => d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit",timeZone:TZ});
@@ -332,6 +383,11 @@ async function search(){
     out.innerHTML = `<p class="note"><strong>Bus details need your API key.</strong> Paste it at the top of the script in index.html. For now, Google Maps can show this trip.</p>${fallback}`;
     return;
   }
+  if(!canSpend(2)){
+    renderUsage();
+    out.innerHTML = `<p class="note err"><strong>Limit reached.</strong> To keep Google free, the app stopped asking Google for bus details. You can still open the trip in Google Maps.</p>${fallback}`;
+    return;
+  }
   out.innerHTML = `<div class="loading" aria-label="Searching"><i></i><i></i><i></i></div>`;
   try{
     const origin = from ? {address:withCity(from)} : {location:{latLng:await getLocation()}};
@@ -340,23 +396,82 @@ async function search(){
     if(whenMode === "depart") body.departureTime = chosenTime().toISOString();
     if(whenMode === "arrive") body.arrivalTime = chosenTime().toISOString();
 
-    const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
-      method:"POST",
-      headers:{"Content-Type":"application/json","X-Goog-Api-Key":API_KEY,
-        "X-Goog-FieldMask":"routes.duration,routes.legs.steps.travelMode,routes.legs.steps.staticDuration,routes.legs.steps.distanceMeters,routes.legs.steps.transitDetails"},
-      body:JSON.stringify(body)
-    });
-    const data = await r.json();
-    if(!r.ok) throw new Error(data?.error?.message || "Google returned error " + r.status);
-    const routes = (data.routes||[]).map(parse).filter(Boolean);
-    if(!routes.length){ out.innerHTML = `<p class="note">No bus trips found for this route and time. Try another time, or check it in Google Maps.</p>${fallback}`; return; }
-    routes.sort((a,b) => (a.leave||0) - (b.leave||0));
-    lastRoutes = {routes, fallback, from, to};
+    const deadline = whenMode === "arrive" ? chosenTime() : null;
+    const driveBody = {origin, destination:{address:withCity(to)}, travelMode:"DRIVE",
+      routingPreference:"TRAFFIC_AWARE", languageCode:"en", units:"METRIC", regionCode:"AE"};
+    const [busRes, carRes] = await Promise.allSettled([
+      callRoutes(body, "routes.duration,routes.legs.steps.travelMode,routes.legs.steps.staticDuration,routes.legs.steps.distanceMeters,routes.legs.steps.transitDetails"),
+      callRoutes(driveBody, "routes.duration,routes.distanceMeters")
+    ]);
+    if(busRes.status === "rejected" && carRes.status === "rejected") throw busRes.reason;
+    const car = carRes.status === "fulfilled" && carRes.value.routes?.[0]
+      ? {sec:secs(carRes.value.routes[0].duration), km:(carRes.value.routes[0].distanceMeters||0)/1000} : null;
+
+    let routes = busRes.status === "fulfilled" ? (busRes.value.routes||[]).map(parse).filter(Boolean) : [];
+    // drop buses you can no longer catch, and (for "Arrive by") ones that get there late
+    const catchable = routes.filter(r => r.leave >= Date.now() - 60000);
+    const onTime = deadline ? catchable.filter(r => r.arrive <= deadline) : catchable;
+    routes = onTime.sort((a,b) => (a.arrive - b.arrive) || (a.leave - b.leave));
+
+    const ctx = {from, to, fallback, car, deadline};
+    if(!routes.length){ out.innerHTML = taxiCard(ctx, "none") + fallback; return; }
+    lastRoutes = {routes, ...ctx};
     show(0);
     tick = setInterval(() => show(lastRoutes.idx, true), 30000);
   }catch(e){
     out.innerHTML = `<p class="note err">${esc(e.message)}</p>${fallback}`;
   }
+}
+
+async function callRoutes(body, mask){
+  addUsage(1);
+  const r = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+    method:"POST",
+    headers:{"Content-Type":"application/json","X-Goog-Api-Key":API_KEY,"X-Goog-FieldMask":mask},
+    body:JSON.stringify(body)
+  });
+  const data = await r.json();
+  if(!r.ok) throw new Error(data?.error?.message || "Google returned error " + r.status);
+  return data;
+}
+
+/* ---------- taxi / Uber suggestion ---------- */
+function uberLink(from, to){
+  const p = new URLSearchParams({action:"setPickup"});
+  if(from) p.set("pickup[formatted_address]", withCity(from)); else p.set("pickup","my_location");
+  p.set("dropoff[formatted_address]", withCity(to));
+  return "https://m.uber.com/ul/?" + p;
+}
+function driveLink(from, to){
+  const p = new URLSearchParams({api:"1", destination:withCity(to), travelmode:"driving"});
+  if(from) p.set("origin", withCity(from));
+  return "https://www.google.com/maps/dir/?" + p;
+}
+/* reason: "none" = no bus makes it, "slow" = bus is much slower than a car */
+function taxiCard({from, to, car, deadline}, reason, bus){
+  let title, text;
+  const carMin = car ? mins(car.sec) : null;
+  if(reason === "none"){
+    title = deadline ? `No bus gets you there by ${fmt(deadline)}` : "No bus you can still catch";
+    if(car && deadline){
+      const leaveBy = new Date(deadline - car.sec*1000 - 5*60000); // 5 min to get the car
+      text = leaveBy > Date.now()
+        ? `A taxi takes about <b>${carMin} min</b> (${car.km.toFixed(1)} km). Book it by <b>${fmt(leaveBy)}</b>.`
+        : `A taxi takes about <b>${carMin} min</b>. Even by car you'd arrive around <b>${fmt(new Date(Date.now()+car.sec*1000+5*60000))}</b>.`;
+    } else if(car){
+      text = `A taxi takes about <b>${carMin} min</b> (${car.km.toFixed(1)} km).`;
+    } else text = "Try a taxi or Uber for this trip.";
+  } else {
+    title = `A taxi is ${mins(bus*60 - car.sec)} min faster`;
+    text = `By car it's about <b>${carMin} min</b> (${car.km.toFixed(1)} km). The bus takes <b>${bus} min</b>.`;
+  }
+  return `<aside class="taxi ${reason}">
+    <div class="taxi-head"><span class="taxi-ico" aria-hidden="true">🚕</span><b>${title}</b></div>
+    <p>${text}</p>
+    <div class="taxi-btns">
+      <a href="${uberLink(from,to)}" target="_blank" rel="noopener">Open Uber</a>
+      <a href="${driveLink(from,to)}" target="_blank" rel="noopener">Car route</a>
+    </div></aside>`;
 }
 
 /* ---------- turn Google's steps into a simple trip ---------- */
@@ -389,8 +504,11 @@ function parse(route){
 
 /* ---------- draw ---------- */
 function show(idx, quiet){
-  const {routes, fallback, to} = lastRoutes; lastRoutes.idx = idx;
+  const {routes, fallback, to, car} = lastRoutes; lastRoutes.idx = idx;
   const R = routes[idx];
+  // suggest a taxi when the bus is at least twice as slow and costs 20+ extra minutes
+  const slow = car && R.total >= 2*mins(car.sec) && R.total - mins(car.sec) >= 20;
+  const taxi = slow ? taxiCard(lastRoutes, "slow", R.total) : "";
   const inMin = Math.round((R.leave - Date.now())/60000);
   let big, lbl;
   if(inMin <= 0){ big = "Now"; lbl = "Leave"; }
@@ -437,7 +555,7 @@ function show(idx, quiet){
       <span class="when2">${fmt(o.leave)}</span>
     </button>`).join("");
 
-  $("out").innerHTML = `
+  $("out").innerHTML = `${taxi}
     <article class="best">
       ${signs}
       <div class="leave${inMin <= 5 ? " urgent" : ""}">
@@ -452,6 +570,7 @@ function show(idx, quiet){
 }
 
 renderFavs();
+renderUsage();
 </script>
 </body>
 </html>
